@@ -53,11 +53,14 @@ cluster <- function(genesets) {
   }
   merged_gs$Pvalue <- rowMeans(merged_gs[, pval_cols], na.rm=TRUE)
   
-  # use richCluster from richR package to cluster
-  clustered_gs <- richCluster(x=merged_gs, minSize=3)
+  #return
+  return()
   
 }
 
+# use richCluster from richR package to cluster
+clustered_gs <- richCluster(x=merged_gs, minSize=3)
+write.table(clustered_gs, file='/Users/sarahhong/Desktop/Hur Lab/enrichment-analysis3/data/clustered_data.txt', sep='\t')
 
 clustered_data <- richCluster(x=combined_data, minSize=3)
 
