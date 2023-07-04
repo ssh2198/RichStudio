@@ -53,8 +53,15 @@ cluster <- function(genesets) {
   }
   merged_gs$Pvalue <- rowMeans(merged_gs[, pval_cols], na.rm=TRUE)
   
+  # average Padj
+  padj_cols <- c()
+  for (i in seq_along(genesets)) {
+    padj_cols <- c(padj_cols, paste0('Padj', i))
+  }
+  merged_gs$Padj <- rowMeans(merged_gs[, padj_cols], na.rm=TRUE)
+  
   #return
-  return()
+  return(merged_gs)
   
 }
 
