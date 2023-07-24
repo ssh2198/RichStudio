@@ -9,160 +9,149 @@
 
 library(shiny)
 library(tidyverse)
-library(devtools)
+library(tools)
 library(gtools)
 library(data.table)
 library(ggplot2)
+library(dplyr)
+library(plotly)
 
+library(devtools)
 install_github("hurlab/richR")
+
 library(richR)
 
-gs1 <- read.delim("~/Desktop/Hur Lab/enrichment-analysis3/data/GO_HF12wk_vs_WT12wk.txt")
-gs2 <- read.delim("~/Desktop/Hur Lab/enrichment-analysis3/data/GO_HF36wk_vs_HF12wk.txt")
-gs3 <- read.delim("~/Desktop/Hur Lab/enrichment-analysis3/data/KEGG_HF36wk_vs_HF12wk.txt")
+#SET WORKING DIRECTORY
+getwd()
+library(rstudioapi) 
+current_path <- getActiveDocumentContext()$path 
+setwd(dirname(current_path))
+base_dir = dirname(current_path)
+output = "output/"
 
-genesets <- list(gs1, gs2, gs3)
-
-
-# this function merges a list of genesets together to prepare for clustering
-cluster <- function(genesets) {
-  
-  # suffix all non 'Term' columns with their index
-  for (i in seq_along(genesets)) {
-    non_term_cols <- colnames(genesets[[i]])
-    non_term_cols[-which(non_term_cols == 'Term')] <- paste0(non_term_cols[-which(non_term_cols == 'Term')], i)
-    colnames(genesets[[i]]) <- non_term_cols
-  }
-  
-  # initialize merged_gs with first geneset
-  merged_gs <- genesets[[1]]
-  
-  # merge genesets
-  for (i in 2:length(genesets)) {
-    merged_gs <- merge(merged_gs, genesets[[i]], by='Term', all=TRUE)
-  }
-  
-  # combine unique 'GeneID' elements
-  for (i in 2:length(genesets)) {
-    geneID_1 <- paste0('GeneID', i-1)
-    geneID_2 <- paste0('GeneID', i)
-    
-    merged_gs$GeneID <- mapply(function (x, y) paste(unique(c(x, y)), collapse=','), 
-                               merged_gs[, geneID_1], merged_gs[, geneID_2])
-  }
-  
-  # average Pvalue
-  pval_cols <- c()
-  for (i in seq_along(genesets)) {
-    pval_cols <- c(pval_cols, paste0('Pvalue', i))
-  }
-  merged_gs$Pvalue <- rowMeans(merged_gs[, pval_cols], na.rm=TRUE)
-  
-  # average Padj
-  padj_cols <- c()
-  for (i in seq_along(genesets)) {
-    padj_cols <- c(padj_cols, paste0('Padj', i))
-  }
-  merged_gs$Padj <- rowMeans(merged_gs[, padj_cols], na.rm=TRUE)
-  
-  #return
-  return(merged_gs)
-  
-}
-
-# use richCluster from richR package to cluster
-clustered_gs <- richCluster(x=merged_gs, minSize=3)
-write.table(clustered_gs, file='/Users/sarahhong/Desktop/Hur Lab/enrichment-analysis3/data/clustered_data.txt', sep='\t')
-
-hmap_prepare <- function(clustered_gs, num_clusters) {
-  
-  # create tibble with Term and AnnotationCluster
-  x <- as_tibble(cbind(clustered_gs$Term, clustered_gs$AnnotationCluster))
-  colnames(x) <- c('Term', 'Cluster')
-  
-  # order clusters numerically
-  x <- x[order(as.numeric(x$Cluster)), ]
-  
-  clusters <- c()
-  #group the Padj values by cluster using the Annotation clustered levels
-  clustered_gs$AnnotationCluster <- as.factor(clustered_gs$AnnotationCluster)
-  for (i in 1:length(levels(clustered_gs$AnnotationCluster))){
-    clusters[[i]] <- clustered_gs[clustered_gs$AnnotationCluster == mixedsort(levels(clustered_gs$AnnotationCluster))[i],]
-  }
-  
-  # define Padj column names
-  padj_cols <- c()
-  for (i in seq_along(genesets)) {
-    padj_cols <- c(padj_cols, paste0('Padj', i))
-  }
-  
-  # subset Padj columns of clustered_gs into values
-  values <- data.frame()
-  values <- clustered_gs[, padj_cols]
-  values$p_rank <- rowMeans(values, na.rm=TRUE)
-  
-  # order clusters by p_rank
-  setorder(values, p_rank, na.last=TRUE)
-  values <- select(values, -p_rank)
-  
-  # combine Term and Cluster with Padj values
-  final_data <- cbind(x, values)
-  final_data <- final_data[c(1:num_clusters), ]
-  
-  return(final_data)
-}
-
-make_heatmap <- function(final_data) {
-  hmap <- final_data
-  hmap$Cluster <- sub("^", "Cluster", hmap$Cluster) # prefix with 'Cluster'
-  
-  # rename 'Padj' columns to 'GS'
-  new_cols <- c()
-  for (i in seq_along(genesets)) {
-    new_cols <- c(new_cols, paste0('GS', i))
-  }
-  colnames(hmap) <- c('Term', 'Cluster', new_cols)
-  
-  # melt the data for heatmap construction
-  melted_data <- melt(hmap)
-  
-  # plot the heatmap
-  p <- ggplot(melted_data, aes(variable, Term)) +
-    geom_tile(aes(fill=value), colour='white') +
-    labs(x='Genesets', y='Clusters', title='Adjusted p-value per cluster') +
-    scale_y_discrete(labels=melted_data$Cluster) +
-    scale_fill_gradient(low='red', high='green') +
-    theme(axis.text=element_text(size=12))
-  return(p)
-}
-
+source('cluster_hmap_func.R')
 
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   
-  # Application title
-  titlePanel("Gene Enrichment Analysis"),
-  
-  # Sidebar with a slider input for number of bins 
-  sidebarLayout(
-    sidebarPanel(
-      # insert file input later
+  navbarPage("Enrichment Analysis",
+    # UPLOAD TAB
+    tabPanel("Upload",
+      sidebarLayout(
+        sidebarPanel(
+          tabsetPanel(
+            # DEG upload panel
+            tabPanel("DEG",
+              br(),
+              textInput('deg_text', "Text Input", placeholder="Paste list of significant genes"),
+              fileInput('deg_files', 'File Input', multiple=FALSE, accept=c('.csv', '.tsv', '.xls', '.txt')),
+              helpText("Accepted formats: .csv, .tsv, .xls, .txt"),
+              selectInput('separator_select', "Element separator", c("Comma", "Space", "Tab", "Guess"), selected="Guess"),
+              actionButton('upload_deg_button', "Upload")
+            ),
+            # Rich Result upload panel
+            tabPanel("Rich Result",
+              br(),
+              textInput('rr_text', "Text Input", placeholder="Paste rich result here"),
+              fileInput('rr_files', 'File Input', multiple=FALSE, accept=c('.csv', '.tsv', '.xls', '.txt')),
+              helpText("Accepted formats: .csv, .tsv, .xls, .txt"),
+              selectInput('separator_select', "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
+              actionButton('upload_deg_button', "Upload")
+            )
+          )
+        ),
+        mainPanel(
+          # Uploaded File View
+          h3("Uploaded Files"),
+          tabsetPanel(
+            # View DEGs
+            tabPanel("DEG",
+              br(),
+              selectInput('selected_degs', "Select DEGs", choices=NULL, multiple=TRUE),
+              actionButton('delete_degs', "Delete selected DEGS"),
+              br(),
+              br(),
+              selectInput('deg_table_select', "Select DEG to view", choices=NULL),
+              tableOutput('deg_table')
+            ),
+            # View rich results
+            tabPanel("Rich Result")
+          )
+        )
+      )
     ),
-    
-    # Show a plot of the generated distribution
-    mainPanel(
-      tableOutput("my_table")
+    tabPanel("Enrich",
+      sidebarLayout(
+        sidebarPanel(
+          tabsetPanel(
+            tabPanel("Enrich",
+              br(),
+              selectInput('keytype_select', "Select keytype", c("ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS",
+                                                                "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "FLYBASE",
+                                                                "FLYBASECG", "FLYBASEPROT", "GENENAME", "GO", "GOALL", "MAP",
+                                                                "ONTOLOGY", "ONTOLOGYALL", "PATH", "PMID", "REFSEQ", "SYMBOL",
+                                                                "UNIGENE", "UNIPROT"), selected="SYMBOL"),
+              selectInput('annot_select', "Select ontology", c("BP", "MF", "CC", "ALL"))
+            ),
+            tabPanel("Cluster")
+          )
+        ),
+        mainPanel(
+          h3("Uploaded Files"),
+          tabsetPanel(
+            tabPanel("DEG"),
+            tabPanel("Rich Result")
+          )
+        )
+      )
+    ),
+    tabPanel("Visualize",
+      tabsetPanel(
+        tabPanel("Heatmap"),
+        tabPanel("Cluster Info")
+      )
     )
   )
+  
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+  uploaded_degs <- reactiveVal(list())
   
-  output$my_table <- renderTable({
-    data[, -1]
+  # when deg upload button clicked
+  observeEvent(input$upload_deg_button, {
+    req(input$deg_files) # Make sure file uploaded
+    uploaded_degs(append(uploaded_degs(), list(input$deg_files)))
   })
+  
+  # when delete button clicked
+  observeEvent(input$delete_degs, {
+    req(input$selected_degs) # Make sure DEG selected
+    uploaded_degs(uploaded_degs()[-input$selected_degs])
+  })
+  
+  get_DEG_file_names <- function() {
+    the_names <- sapply(uploaded_degs(), function(x) uploaded_degs()[[x$datapath]])
+    names(the_names) <- the_names
+    return(the_names)
+  }
+  
+  observe({
+    # Update the selectInput choices based on the uploaded files
+    updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=get_DEG_file_names())
+    updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=get_DEG_file_names())
+  })
+  
+  deg_to_table <- reactive ({
+    req(input$deg_table_select)
+    df <- read.csv(uploaded_degs()[[input$deg_table_select]], 
+                   header=TRUE,
+                   sep=input$separator_select)
+    return(df)
+  })
+  output$deg_table <- renderTable(deg_to_table())
 }
 
 # Run the application 
