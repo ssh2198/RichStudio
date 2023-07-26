@@ -15,10 +15,9 @@ library(data.table)
 library(ggplot2)
 library(dplyr)
 library(plotly)
-
 library(devtools)
-install_github("hurlab/richR")
 
+install_github("hurlab/richR")
 library(richR)
 
 #SET WORKING DIRECTORY
@@ -69,6 +68,7 @@ ui <- fluidPage(
             tabPanel("DEG",
               br(),
               selectInput('selected_degs', "Select DEGs", choices=NULL, multiple=TRUE),
+              tags$div(id='placeholder'), # dynamic ui
               actionButton('delete_degs', "Delete selected DEGS"),
               br(),
               br(),
@@ -118,40 +118,36 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  uploaded_degs <- reactiveVal(list())
+  
+  # keep track of DEGs inserted and not yet removed
+  uploaded_degs <- reactiveValues(labels=NULL)
+  uploaded_deg_datapaths <- reactiveVal(list())
   
   # when deg upload button clicked
   observeEvent(input$upload_deg_button, {
     req(input$deg_files) # Make sure file uploaded
-    uploaded_degs(append(uploaded_degs(), list(input$deg_files)))
+    lab <- input$deg_files$name
+    dp <- input$deg_files$datapath
+    names(dp) <- lab
+    uploaded_deg_datapaths(append(uploaded_deg_datapaths(), dp)) # set datapaths
+    uploaded_degs$labels <- c(uploaded_degs$labels, lab) # set labels 
   })
   
   # when delete button clicked
   observeEvent(input$delete_degs, {
     req(input$selected_degs) # Make sure DEG selected
-    uploaded_degs(uploaded_degs()[-input$selected_degs])
+    nvector <- intersect(names(uploaded_deg_datapaths()), uploaded_degs$labels)
+    subset_nvector <- uploaded_deg_datapaths()[nvector]
+    
+    uploaded_deg_datapaths <- setdiff(uploaded_deg_datapaths(), input$selected_degs)
+    uploaded_degs$labels <- setdiff(uploaded_degs$labels, input$selected_degs)
   })
-  
-  get_DEG_file_names <- function() {
-    the_names <- sapply(uploaded_degs(), function(x) uploaded_degs()[[x$datapath]])
-    names(the_names) <- the_names
-    return(the_names)
-  }
   
   observe({
-    # Update the selectInput choices based on the uploaded files
-    updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=get_DEG_file_names())
-    updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=get_DEG_file_names())
+    updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=uploaded_degs$labels)
+    updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=uploaded_degs$labels)
   })
   
-  deg_to_table <- reactive ({
-    req(input$deg_table_select)
-    df <- read.csv(uploaded_degs()[[input$deg_table_select]], 
-                   header=TRUE,
-                   sep=input$separator_select)
-    return(df)
-  })
-  output$deg_table <- renderTable(deg_to_table())
 }
 
 # Run the application 
