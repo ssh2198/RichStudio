@@ -15,6 +15,7 @@ library(data.table)
 library(ggplot2)
 library(dplyr)
 library(plotly)
+library(DT)
 library(devtools)
 
 install_github("hurlab/richR")
@@ -73,7 +74,7 @@ ui <- fluidPage(
               br(),
               br(),
               selectInput('deg_table_select', "Select DEG to view", choices=NULL),
-              tableOutput('deg_table')
+              DT::dataTableOutput('deg_table')
             ),
             # View rich results
             tabPanel("Rich Result")
@@ -100,7 +101,9 @@ ui <- fluidPage(
         mainPanel(
           h3("Uploaded Files"),
           tabsetPanel(
-            tabPanel("DEG"),
+            tabPanel("DEG",
+              
+            ),
             tabPanel("Rich Result")
           )
         )
@@ -146,6 +149,17 @@ server <- function(input, output) {
   observe({
     updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=uploaded_degs$labels)
     updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=uploaded_degs$labels)
+  })
+  
+  deg_to_table <- reactive ({
+    req(input$deg_table_select)
+    df <- read.csv(uploaded_deg_datapaths()[[input$deg_table_select]], 
+                   header=TRUE,
+                   sep='\t')
+    return(df)
+  })
+  output$deg_table = DT::renderDataTable({
+    deg_to_table()
   })
   
 }
