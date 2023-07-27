@@ -30,6 +30,8 @@ base_dir = dirname(current_path)
 output = "output/"
 
 source('cluster_hmap_func.R')
+source('shiny_enrich.R')
+
 
 
 # Define UI for application that draws a histogram
@@ -69,7 +71,6 @@ ui <- fluidPage(
             tabPanel("DEG",
               br(),
               selectInput('selected_degs', "Select DEGs", choices=NULL, multiple=TRUE),
-              tags$div(id='placeholder'), # dynamic ui
               actionButton('delete_degs', "Delete selected DEGS"),
               br(),
               br(),
@@ -88,12 +89,13 @@ ui <- fluidPage(
           tabsetPanel(
             tabPanel("Enrich",
               br(),
+              selectInput('anntype_select', "Select annotation source", c("GO", "KEGG")),
               selectInput('keytype_select', "Select keytype", c("ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS",
                                                                 "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "FLYBASE",
                                                                 "FLYBASECG", "FLYBASEPROT", "GENENAME", "GO", "GOALL", "MAP",
                                                                 "ONTOLOGY", "ONTOLOGYALL", "PATH", "PMID", "REFSEQ", "SYMBOL",
                                                                 "UNIGENE", "UNIPROT"), selected="SYMBOL"),
-              selectInput('annot_select', "Select ontology", c("BP", "MF", "CC", "ALL"))
+              selectInput('ont_select', "Select ontology", c("BP", "MF", "CC"))
             ),
             tabPanel("Cluster")
           )
@@ -102,6 +104,8 @@ ui <- fluidPage(
           h3("Uploaded Files"),
           tabsetPanel(
             tabPanel("DEG",
+              br(),
+              selectInput('deg_to_enrich', "Select DEGs to enrich", choices=NULL, multiple=TRUE),
               
             ),
             tabPanel("Rich Result")
@@ -119,12 +123,17 @@ ui <- fluidPage(
   
 )
 
+
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   
   # keep track of DEGs inserted and not yet removed
   uploaded_degs <- reactiveValues(labels=NULL)
   uploaded_deg_datapaths <- reactiveVal(list())
+  
+  # Create reactive objects to make uploaded_degs and uploaded_deg_datapaths accessible in the Enrich tabPanel
+  uploaded_degs_reactive <- reactive(uploaded_degs$labels)
+  uploaded_deg_datapaths_reactive <- reactive(reactiveValuesToList(uploaded_deg_datapaths()))
   
   # when deg upload button clicked
   observeEvent(input$upload_deg_button, {
@@ -147,8 +156,9 @@ server <- function(input, output) {
   })
   
   observe({
-    updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=uploaded_degs$labels)
-    updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=uploaded_degs$labels)
+    updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=uploaded_degs_reactive())
+    updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=uploaded_degs_reactive())
+    updateSelectInput(session=getDefaultReactiveDomain(), 'deg_to_enrich', choices=uploaded_degs_reactive())
   })
   
   deg_to_table <- reactive ({
