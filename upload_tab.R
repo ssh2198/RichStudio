@@ -1,4 +1,5 @@
 library(shiny)
+source('deg_rr_view.R')
 
 uploadTabUI <- function(id) {
   ns <- NS(id)
@@ -34,13 +35,7 @@ uploadTabUI <- function(id) {
         tabsetPanel(
           # View DEGs
           tabPanel("DEG",
-            br(),
-            selectInput(ns('selected_degs'), "Select DEGs", choices=NULL, multiple=TRUE),
-            actionButton(ns('delete_degs'), "Delete selected DEGS"),
-            br(),
-            br(),
-            selectInput(ns('deg_table_select'), "Select DEG to view", choices=NULL),
-            DT::dataTableOutput(ns('deg_table'))
+            degViewUI('deg_view')
           ),
           # View rich results
           tabPanel("Rich Result")
@@ -69,38 +64,8 @@ uploadTabServer <- function(id, u_degnames, u_degpaths) {
       u_degpaths(append(u_degpaths(), dp)) # set u_degpaths
       u_degnames$labels <- c(u_degnames$labels, lab) # set u_degnames 
     })
+    degViewServer('deg_view', u_degnames_reactive(), u_degpaths_reactive())
     
-    # when delete button clicked
-    observeEvent(input$delete_degs, {
-      req(input$selected_degs) # Make sure DEG selected
-      
-      nvector <- intersect(names(u_degpaths()), u_degnames$labels)
-      subset_nvector <- u_degpaths()[nvector]
-      
-      # remove selected files from u_degpaths and u_degnames 
-      u_degpaths <- setdiff(u_degpaths(), input$selected_degs)
-      u_degnames$labels <- setdiff(u_degnames$labels, input$selected_degs)
-    })
-    
-    # update select inputs based on # file inputs
-    observe({
-      updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
-      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=u_degnames_reactive())
-    })
-    
-    # reactively update which table is read based on selection
-    deg_to_table <- reactive ({
-      req(input$deg_table_select)
-      df <- read.csv(u_degpaths()[[input$deg_table_select]], 
-                     header=TRUE,
-                     sep='\t')
-      return(df)
-    })
-    
-    # output deg table
-    output$deg_table = DT::renderDataTable({
-      deg_to_table()
-    })
   })
   
 }
