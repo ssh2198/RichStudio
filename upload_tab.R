@@ -51,51 +51,56 @@ uploadTabUI <- function(id) {
 }
 
 
-uploadTabServer <- function(id) {
+uploadTabServer <- function(id, u_degnames, u_degpaths) {
+  
   moduleServer(id, function(input, output, session) {
-    # keep track of DEGs inserted and not yet removed
-    uploaded_degs <- reactiveValues(labels=NULL)
-    uploaded_deg_datapaths <- reactiveVal(list())
-    
-    # Create reactive objects to make uploaded_degs and uploaded_deg_datapaths accessible in the Enrich tabPanel
-    uploaded_degs_reactive <- reactive(uploaded_degs$labels)
-    uploaded_deg_datapaths_reactive <- reactive(reactiveValuesToList(uploaded_deg_datapaths()))
+    # create reactive obj to make u_degnames and u_degpaths accessible in other modules
+    u_degnames_reactive <- reactive(u_degnames$labels) 
+    u_degpaths_reactive <- reactive(reactiveValuesToList(u_degpaths)) 
     
     # when deg upload button clicked
     observeEvent(input$upload_deg_button, {
       req(input$deg_files) # Make sure file uploaded
+      
       lab <- input$deg_files$name
       dp <- input$deg_files$datapath
       names(dp) <- lab
-      uploaded_deg_datapaths(append(uploaded_deg_datapaths(), dp)) # set datapaths
-      uploaded_degs$labels <- c(uploaded_degs$labels, lab) # set labels 
+      
+      u_degpaths(append(u_degpaths(), dp)) # set u_degpaths
+      u_degnames$labels <- c(u_degnames$labels, lab) # set u_degnames 
     })
     
     # when delete button clicked
     observeEvent(input$delete_degs, {
       req(input$selected_degs) # Make sure DEG selected
-      nvector <- intersect(names(uploaded_deg_datapaths()), uploaded_degs$labels)
-      subset_nvector <- uploaded_deg_datapaths()[nvector]
       
-      uploaded_deg_datapaths <- setdiff(uploaded_deg_datapaths(), input$selected_degs)
-      uploaded_degs$labels <- setdiff(uploaded_degs$labels, input$selected_degs)
+      nvector <- intersect(names(u_degpaths()), u_degnames$labels)
+      subset_nvector <- u_degpaths()[nvector]
+      
+      # remove selected files from u_degpaths and u_degnames 
+      u_degpaths <- setdiff(u_degpaths(), input$selected_degs)
+      u_degnames$labels <- setdiff(u_degnames$labels, input$selected_degs)
     })
     
+    # update select inputs based on # file inputs
     observe({
-      updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=uploaded_degs_reactive())
-      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=uploaded_degs_reactive())
-      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_to_enrich', choices=uploaded_degs_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=u_degnames_reactive())
     })
     
+    # reactively update which table is read based on selection
     deg_to_table <- reactive ({
       req(input$deg_table_select)
-      df <- read.csv(uploaded_deg_datapaths()[[input$deg_table_select]], 
+      df <- read.csv(u_degpaths()[[input$deg_table_select]], 
                      header=TRUE,
                      sep='\t')
       return(df)
     })
+    
+    # output deg table
     output$deg_table = DT::renderDataTable({
       deg_to_table()
     })
   })
+  
 }

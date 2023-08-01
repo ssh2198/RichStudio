@@ -29,10 +29,11 @@ setwd(dirname(current_path))
 base_dir = dirname(current_path)
 output = "output/"
 
+# SOURCE RELATED SCRIPTS
 source('cluster_hmap_func.R')
 source('shiny_enrich.R')
 source('upload_tab.R')
-
+source('enrich_tab.R')
 
 
 ui <- fluidPage(
@@ -42,36 +43,7 @@ ui <- fluidPage(
       uploadTabUI("upload"),
     ),
     tabPanel("Enrich",
-      sidebarLayout(
-        sidebarPanel(
-          tabsetPanel(
-            tabPanel("Enrich",
-              br(),
-              textInput('header_input', "Header", value="geneID"),
-              selectInput('anntype_select', "Select annotation source", c("GO", "KEGG")),
-              selectInput('keytype_select', "Select keytype", c("ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS",
-                                                                "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "FLYBASE",
-                                                                "FLYBASECG", "FLYBASEPROT", "GENENAME", "GO", "GOALL", "MAP",
-                                                                "ONTOLOGY", "ONTOLOGYALL", "PATH", "PMID", "REFSEQ", "SYMBOL",
-                                                                "UNIGENE", "UNIPROT"), selected="SYMBOL"),
-              selectInput('ont_select', "Select ontology", c("BP", "MF", "CC")),
-              actionButton('enrich_deg', "Enrich")
-            ),
-            tabPanel("Cluster")
-          )
-        ),
-        mainPanel(
-          h3("Uploaded Files"),
-          tabsetPanel(
-            tabPanel("DEG",
-              br(),
-              selectInput('deg_to_enrich', "Select DEGs to enrich", choices=NULL, multiple=TRUE),
-              p('Enriched DEGs will appear in "Rich Result" tab', style="color:grey")
-            ),
-            tabPanel("Rich Result")
-          )
-        )
-      )
+      enrichTabUI("enrich"),
     ),
     tabPanel("Visualize",
       tabsetPanel(
@@ -80,14 +52,18 @@ ui <- fluidPage(
       )
     )
   )
-  
 )
 
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   
-  uploadTabServer("upload")
+  # keep track of DEGs inserted and not yet removed
+  u_degnames <- reactiveValues(labels=NULL) # stores uploaded deg names
+  u_degpaths <- reactiveVal(list()) # stores uploaded deg datapaths
+  
+  uploadTabServer("upload", u_degnames=u_degnames, u_degpaths=u_degpaths)
+  enrichTabServer("enrich", u_degnames=u_degnames, u_degpaths=u_degpaths)
   
 }
 
