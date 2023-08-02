@@ -1,5 +1,7 @@
 library(shiny)
+
 source('shiny_enrich.R')
+source('cluster_hmap_func.R')
 
 
 enrichTabUI <- function(id) {
@@ -47,15 +49,21 @@ enrichTabUI <- function(id) {
           tabPanel("Rich Result",
             br(),
             selectInput(ns('selected_rrs'), "Select rich results", choices=NULL, multiple=TRUE),
-            actionButton(ns('delete_rr'), "Delete selected rich results"),
+            actionButton(ns('delete_rr'), "Delete selection"),
             br(),
             br(),
             selectInput(ns('rr_table_select'), "Select rich result to view", choices=NULL),
             DT::dataTableOutput(ns('rr_table'))
           ),
-          tabPanel("Clustered",
+          tabPanel("Cluster Result",
             br(),
-            p("Clustered genesets will appear here", style="color:grey")
+            p("Clustered genesets will appear here", style="color:grey"),
+            selectInput(ns('selected_clus'), "Select cluster results", choices=NULL),
+            actionButton(ns('delete_clus'), "Delete selection"),
+            br(),
+            br(),
+            selectInput(ns('clus_table_select'), "Select cluster result to view", choices=NULL),
+            DT::dataTableOutput(ns('clus_table'))
           )
         )
       )
@@ -64,7 +72,7 @@ enrichTabUI <- function(id) {
 }
 
 
-enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
+enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u_cluslists) {
   
   moduleServer(id, function(input, output, session) {
     
@@ -73,6 +81,9 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
     u_degpaths_reactive <- reactive(reactiveValuesToList(u_degpaths)) 
     u_rrnames_reactive <- reactive(u_rrnames$labels) 
     u_rrdfs_reactive <- reactive(u_rrdfs)
+    u_clusnames_reactive <- reactive(u_clusnames$labels)
+    u_clusdfs_reactive <- reactive(u_clusdfs)
+    u_cluslists_reactive <- reactive(u_cluslists)
     
     # update select inputs based on # file inputs
     observe({
@@ -80,10 +91,12 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
       updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=u_degnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'selected_rrs', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'rr_table_select', choices=u_rrnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'selected_clus', choices=u_clusnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'clus_table_select', choices=u_clusnames_reactive())
     })
     
     
-    # <!----- DEG FILE MANAGEMENT -----!>
+    # <!----- DEG / ENRICH LOGIC -----!>
     # enrich selected degs
     observeEvent(input$enrich_deg, {
       req(input$selected_degs)
@@ -114,8 +127,6 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
     
     
     # <!----- RICH RESULT FILE MANAGEMENT -----!>
-    # clustering
-    
     # when rr delete button clicked
     observeEvent(input$delete_rrs, {
       req(input$selected_rrs) # Make sure DEG selected
@@ -135,6 +146,43 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
     # output rr table
     output$rr_table = DT::renderDataTable({
       rr_to_table()
+    })
+    
+    
+    # <!----- CLUSTERING LOGIC -----!>
+    # clustering
+    observeEvent(input$cluster, {
+      req(input$selected_rrs) # Make sure rich results selected
+      
+      genesets <- list()
+      for (i in seq_along(input$selected_rrs)) {
+        tmp <- input$selected_rrs[i]
+        genesets <- c(genesets, list(u_rrdfs[[tmp]]))
+      }
+      
+      merged_gs <- merge_genesets(genesets)
+      print("done merge")
+      clustered_gs <- cluster(merged_gs=merged_gs, cutoff=input$cutoff, overlap=input$overlap, minSize=input$min_size)
+      print("done clustering")
+      cluster_list <- cluster_list(clustered_gs=clustered_gs, merged_gs=merged_gs, genesets=genesets)
+      
+      # store in reactive
+      lab <- input$cluster_name
+      u_clusdfs[[lab]] <- clustered_gs # set u_clusdfs
+      u_cluslists[[lab]] <- cluster_list # set u_cluslists
+      u_clusnames$labels <- c(u_clusnames$labels, lab) # set u_clusnames
+    })
+    
+    # reactively update which cluster table is read based on selection
+    clus_to_table <- reactive ({
+      req(input$clus_table_select)
+      df <- u_clusdfs[[input$clus_table_select]]
+      return(df)
+    })
+    
+    # output rr table
+    output$clus_table = DT::renderDataTable({
+      clus_to_table()
     })
   })
 }

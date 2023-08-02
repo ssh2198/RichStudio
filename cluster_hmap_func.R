@@ -31,9 +31,9 @@ genesets <- list(gs1, gs2, gs3)
 
 #genesets %>%
 #  merge_genesets() %>%
-#  cluster() %>%
-#  hmap_prepare(num_clusters=25) %>%
-#  make_heatmap()
+#  cluster(cutoff=0.5, overlap=0.5, minSize=2) %>%
+#  hmap_prepare() %>%
+#  make_heatmap(genesets=genesets)
 
 
 # this function merges a list of genesets together to prepare for clustering
@@ -97,8 +97,8 @@ merge_genesets <- function(genesets) {
 }
 
 # clusters the merged geneset
-cluster <- function(merged_gs) {
-  clustered_gs <- richCluster(x=merged_gs, gene=TRUE, minSize=2) # from richR
+cluster <- function(merged_gs, cutoff, overlap, minSize) {
+  clustered_gs <- richCluster(x=merged_gs, gene=TRUE, cutoff=cutoff, overlap=overlap, minSize=minSize) # from richR
   write.table(clustered_gs, file='/Users/sarahhong/Desktop/Hur Lab/enrichment-analysis/data/clustered_data.txt', sep='\t')
   return(clustered_gs)
 }

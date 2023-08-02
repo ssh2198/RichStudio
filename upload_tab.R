@@ -1,5 +1,6 @@
 library(shiny)
-
+# add reset button
+# automatic column based on col name
 
 uploadTabUI <- function(id) {
   ns <- NS(id)
@@ -11,7 +12,7 @@ uploadTabUI <- function(id) {
           # DEG upload panel
           tabPanel("DEG",
             br(),
-            textInput(ns('deg_text'), "Text Input", placeholder="Paste list of significant genes"),
+            textAreaInput(ns('deg_text'), "Text Input", placeholder="Paste list of significant genes"),
             textInput(ns('textinput_name'), "Name", placeholder="Set name for pasted gene list"),
             fileInput(ns('deg_files'), 'File Input', multiple=FALSE, accept=c('.csv', '.tsv', '.xls', '.txt')),
             helpText("Accepted formats: .csv, .tsv, .xls, .txt"),

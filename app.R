@@ -55,17 +55,20 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   
-  # DYNAMIC DEG / RICH RESULT LISTS
+  # DYNAMIC DEG / RICH RESULT / CLUSTER LISTS
   u_degnames <- reactiveValues(labels=NULL)  # uploaded deg names
   u_degpaths <- reactiveVal(list())  # uploaded deg datapaths
   u_rrnames <- reactiveValues(labels=NULL)  # rich result names
   u_rrdfs <- reactiveValues()  # rich result dataframes
+  u_clusnames <- reactiveValues(labels=NULL)  # cluster result names
+  u_clusdfs <- reactiveValues()  # cluster result dataframes
+  u_cluslists <- reactiveValues()  # cluster info lists
   
   # SERVER LOGIC
   uploadTabServer("upload", u_degnames=u_degnames, u_degpaths=u_degpaths, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs)
   enrichTabServer("enrich", u_degnames=u_degnames, u_degpaths=u_degpaths, 
-                  u_rrnames=u_rrnames, u_rrdfs=u_rrdfs)
+                  u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
   visualizeTabServer("visualize")
   
 }
