@@ -1,9 +1,11 @@
 library(shiny)
 source('shiny_enrich.R')
 
+
 enrichTabUI <- function(id) {
   ns <- NS(id)
   fluidPage(
+    # ENRICH TAB CONTENTS
     sidebarLayout(
       sidebarPanel(
         tabsetPanel(
@@ -22,11 +24,12 @@ enrichTabUI <- function(id) {
           ),
           tabPanel("Cluster",
             br(),
+            textInput(ns('cluster_name'), "Name", value="Test group"),
             selectInput(ns('cluster_by'), "Cluster by", c("Mean Pvalue", "Median Pvalue", "Min Pvalue", "Mean Padj", "Median Padj", "Min Padj")),
             numericInput(ns('cutoff'), "Cutoff", value=.5, min=0, max=1),
             numericInput(ns('overlap'), "Overlap", value=.5, min=0, max=1),
             numericInput(ns('min_size'), "Overlap", value=2, min=0),
-            actionButton(ns('cluster'), "Cluster selection")
+            actionButton(ns('cluster'), "Cluster")
           )
         )
       ),
@@ -34,12 +37,12 @@ enrichTabUI <- function(id) {
         h3("Uploaded Files"),
         tabsetPanel(
           tabPanel("DEG",
-             br(),
-             selectInput(ns('selected_degs'), "Select DEGs to enrich", choices=NULL, multiple=TRUE),
-             p('Enriched DEGs will appear in "Rich Result" tab', style="color:grey"),
-             br(),
-             selectInput(ns('deg_table_select'), "Select DEG to view", choices=NULL),
-             DT::dataTableOutput(ns('deg_table'))
+            br(),
+            selectInput(ns('selected_degs'), "Select DEGs to enrich", choices=NULL, multiple=TRUE),
+            p('Enriched DEGs will appear in "Rich Result" tab', style="color:grey"),
+            br(),
+            selectInput(ns('deg_table_select'), "Select DEG to view", choices=NULL),
+            DT::dataTableOutput(ns('deg_table'))
           ),
           tabPanel("Rich Result",
             br(),
@@ -49,6 +52,10 @@ enrichTabUI <- function(id) {
             br(),
             selectInput(ns('rr_table_select'), "Select rich result to view", choices=NULL),
             DT::dataTableOutput(ns('rr_table'))
+          ),
+          tabPanel("Clustered",
+            br(),
+            p("Clustered genesets will appear here", style="color:grey")
           )
         )
       )
@@ -56,14 +63,27 @@ enrichTabUI <- function(id) {
   )
 }
 
+
 enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
+  
   moduleServer(id, function(input, output, session) {
+    
     # create reactive objs to make accessible in other modules
     u_degnames_reactive <- reactive(u_degnames$labels) 
     u_degpaths_reactive <- reactive(reactiveValuesToList(u_degpaths)) 
     u_rrnames_reactive <- reactive(u_rrnames$labels) 
     u_rrdfs_reactive <- reactive(u_rrdfs)
     
+    # update select inputs based on # file inputs
+    observe({
+      updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=u_degnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'selected_rrs', choices=u_rrnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'rr_table_select', choices=u_rrnames_reactive())
+    })
+    
+    
+    # <!----- DEG FILE MANAGEMENT -----!>
     # enrich selected degs
     observeEvent(input$enrich_deg, {
       req(input$selected_degs)
@@ -78,13 +98,6 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
       u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
     })
     
-    # update select inputs based on # file inputs
-    observe({
-      updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
-      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=u_degnames_reactive())
-      updateSelectInput(session=getDefaultReactiveDomain(), 'selected_rrs', choices=u_rrnames_reactive())
-    })
-    
     # reactively update which deg table is read based on selection
     deg_to_table <- reactive ({
       req(input$deg_table_select)
@@ -97,6 +110,31 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
     # output deg table
     output$deg_table = DT::renderDataTable({
       deg_to_table()
+    })
+    
+    
+    # <!----- RICH RESULT FILE MANAGEMENT -----!>
+    # clustering
+    
+    # when rr delete button clicked
+    observeEvent(input$delete_rrs, {
+      req(input$selected_rrs) # Make sure DEG selected
+      
+      # remove selected files from u_rrdfs and u_rrnames 
+      u_rrdfs <- setdiff(names(u_rrdfs), input$selected_rrs)
+      u_rrnames$labels <- setdiff(u_rrnames$labels, input$selected_rrs)
+    })
+    
+    # reactively update which rr table is read based on selection
+    rr_to_table <- reactive ({
+      req(input$rr_table_select)
+      df <- u_rrdfs[[input$rr_table_select]]
+      return(df)
+    })
+    
+    # output rr table
+    output$rr_table = DT::renderDataTable({
+      rr_to_table()
     })
   })
 }

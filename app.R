@@ -34,6 +34,7 @@ source('cluster_hmap_func.R')
 source('shiny_enrich.R')
 source('upload_tab.R')
 source('enrich_tab.R')
+source('visualize_tab.R')
 
 
 ui <- fluidPage(
@@ -46,30 +47,26 @@ ui <- fluidPage(
       enrichTabUI("enrich"),
     ),
     tabPanel("Visualize",
-      tabsetPanel(
-        tabPanel("Heatmap"),
-        tabPanel("Cluster Info")
-      )
+      visualizeTabUI("visualize"),
     )
   )
 )
 
 
-# Define server logic required to draw a histogram
 server <- function(input, output) {
   
-  # keep track of DEGs inserted and not yet removed
-  u_degnames <- reactiveValues(labels=NULL) # stores uploaded deg names
-  u_degpaths <- reactiveVal(list()) # stores uploaded deg datapaths
+  # DYNAMIC DEG / RICH RESULT LISTS
+  u_degnames <- reactiveValues(labels=NULL)  # uploaded deg names
+  u_degpaths <- reactiveVal(list())  # uploaded deg datapaths
+  u_rrnames <- reactiveValues(labels=NULL)  # rich result names
+  u_rrdfs <- reactiveValues()  # rich result dataframes
   
-  # keep track of rich results inserted and not yet removed
-  u_rrnames <- reactiveValues(labels=NULL) # stores rich result names
-  u_rrdfs <- reactiveValues() # stores rich results as dataframes
-  
+  # SERVER LOGIC
   uploadTabServer("upload", u_degnames=u_degnames, u_degpaths=u_degpaths, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs)
   enrichTabServer("enrich", u_degnames=u_degnames, u_degpaths=u_degpaths, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs)
+  visualizeTabServer("visualize")
   
 }
 
