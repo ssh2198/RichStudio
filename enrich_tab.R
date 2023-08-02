@@ -1,4 +1,5 @@
 library(shiny)
+source('shiny_enrich.R')
 
 enrichTabUI <- function(id) {
   ns <- NS(id)
@@ -26,12 +27,15 @@ enrichTabUI <- function(id) {
         tabsetPanel(
           tabPanel("DEG",
              br(),
-             selectInput(ns('deg_to_enrich'), "Select DEGs to enrich", choices=NULL, multiple=TRUE),
-             p('Enriched DEGs will appear in "Rich Result" tab', style="color:grey")
+             selectInput(ns('selected_degs'), "Select DEGs to enrich", choices=NULL, multiple=TRUE),
+             p('Enriched DEGs will appear in "Rich Result" tab', style="color:grey"),
+             br(),
+             selectInput(ns('deg_table_select'), "Select DEG to view", choices=NULL),
+             DT::dataTableOutput(ns('deg_table'))
           ),
           tabPanel("Rich Result",
             br(),
-            selectInput(ns('rr_view'), "Select rich results", choices=NULL, multiple=TRUE),
+            selectInput(ns('selected_rrs'), "Select rich results", choices=NULL, multiple=TRUE),
             actionButton(ns('delete_rr'), "Delete selected rich results"),
             br(),
             br(),
@@ -44,8 +48,46 @@ enrichTabUI <- function(id) {
   )
 }
 
-enrichTabServer <- function(id, u_degnames, u_degpaths) {
+enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
   moduleServer(id, function(input, output, session) {
+    # create reactive objs to make accessible in other modules
+    u_degnames_reactive <- reactive(u_degnames$labels) 
+    u_degpaths_reactive <- reactive(reactiveValuesToList(u_degpaths)) 
+    u_rrnames_reactive <- reactive(u_rrnames$labels) 
+    u_rrdfs_reactive <- reactive(u_rrdfs)
     
+    # enrich selected degs
+    observeEvent(input$enrich_deg, {
+      req(input$selected_degs)
+      # enrich
+      df <- shiny_enrich(x=u_degpaths()[[input$selected_degs]], header=input$header_input, 
+                         anntype=input$anntype_select, keytype=input$keytype_select, ontology=input$ont_select)
+      lab <- input$selected_degs
+      names(df) <- lab
+      
+      #u_rrdfs(append(u_rrdfs(), list(df=df))) # set u_rrdfs
+      u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
+    })
+    
+    # update select inputs based on # file inputs
+    observe({
+      updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=u_degnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'selected_rrs', choices=u_rrnames_reactive())
+    })
+    
+    # reactively update which deg table is read based on selection
+    deg_to_table <- reactive ({
+      req(input$deg_table_select)
+      df <- read.csv(u_degpaths()[[input$deg_table_select]], 
+                     header=TRUE,
+                     sep='\t')
+      return(df)
+    })
+    
+    # output deg table
+    output$deg_table = DT::renderDataTable({
+      deg_to_table()
+    })
   })
 }

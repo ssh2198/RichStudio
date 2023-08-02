@@ -18,7 +18,7 @@ library(plotly)
 library(DT)
 library(devtools)
 
-install_github("hurlab/richR")
+#install_github("hurlab/richR")
 library(richR)
 
 #SET WORKING DIRECTORY
@@ -62,8 +62,14 @@ server <- function(input, output) {
   u_degnames <- reactiveValues(labels=NULL) # stores uploaded deg names
   u_degpaths <- reactiveVal(list()) # stores uploaded deg datapaths
   
-  uploadTabServer("upload", u_degnames=u_degnames, u_degpaths=u_degpaths)
-  enrichTabServer("enrich", u_degnames=u_degnames, u_degpaths=u_degpaths)
+  # keep track of rich results inserted and not yet removed
+  u_rrnames <- reactiveValues(labels=NULL) # stores rich result names
+  u_rrdfs <- reactiveValues() # stores rich results as dataframes
+  
+  uploadTabServer("upload", u_degnames=u_degnames, u_degpaths=u_degpaths, 
+                  u_rrnames=u_rrnames, u_rrdfs=u_rrdfs)
+  enrichTabServer("enrich", u_degnames=u_degnames, u_degpaths=u_degpaths, 
+                  u_rrnames=u_rrnames, u_rrdfs=u_rrdfs)
   
 }
 

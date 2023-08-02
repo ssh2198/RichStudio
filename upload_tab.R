@@ -14,17 +14,16 @@ uploadTabUI <- function(id) {
             textInput(ns('textinput_name'), "Name", placeholder="Set name for pasted gene list"),
             fileInput(ns('deg_files'), 'File Input', multiple=FALSE, accept=c('.csv', '.tsv', '.xls', '.txt')),
             helpText("Accepted formats: .csv, .tsv, .xls, .txt"),
-            selectInput(ns('separator_select'), "Element separator", c("Comma", "Space", "Tab", "Guess"), selected="Guess"),
+            selectInput(ns('deg_separator_select'), "Element separator", c("Comma", "Space", "Tab", "Guess"), selected="Guess"),
             actionButton(ns('upload_deg_button'), "Upload")
           ),
           # Rich Result upload panel
           tabPanel("Rich Result",
             br(),
-            textInput(ns('rr_text'), "Text Input", placeholder="Paste rich result here"),
             fileInput(ns('rr_files'), 'File Input', multiple=FALSE, accept=c('.csv', '.tsv', '.xls', '.txt')),
             helpText("Accepted formats: .csv, .tsv, .xls, .txt"),
-            selectInput(ns('separator_select'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
-            actionButton(ns('upload_deg_button'), "Upload")
+            selectInput(ns('rr_separator_select'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
+            actionButton(ns('upload_rr_button'), "Upload")
           )
         )
       ),
@@ -43,7 +42,15 @@ uploadTabUI <- function(id) {
             DT::dataTableOutput(ns('deg_table'))
           ),
           # View rich results
-          tabPanel("Rich Result")
+          tabPanel("Rich Result",
+            br(),
+            selectInput(ns('selected_rrs'), "Select rich results", choices=NULL, multiple=TRUE),
+            actionButton(ns('delete_rrs'), "Delete selected rich results"),
+            br(),
+            br(),
+            selectInput(ns('rr_table_select'), "Select rich result to view", choices=NULL),
+            DT::dataTableOutput(ns('rr_table'))
+          )
         )
       )
     )
@@ -51,13 +58,26 @@ uploadTabUI <- function(id) {
 }
 
 
-uploadTabServer <- function(id, u_degnames, u_degpaths) {
+uploadTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
   
   moduleServer(id, function(input, output, session) {
-    # create reactive obj to make u_degnames and u_degpaths accessible in other modules
+    
+    # create reactive objs to make accessible in other modules
     u_degnames_reactive <- reactive(u_degnames$labels) 
     u_degpaths_reactive <- reactive(reactiveValuesToList(u_degpaths)) 
+    u_rrnames_reactive <- reactive(u_rrnames$labels) 
+    u_rrdfs_reactive <- reactive(u_rrdfs)
     
+    # update select inputs based on # file inputs
+    observe({
+      updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=u_degnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'selected_rrs', choices=u_rrnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'rr_table_select', choices=u_rrnames_reactive())
+    })
+    
+    
+    # <!----- DEG FILE MANAGEMENT -----!>
     # when deg upload button clicked
     observeEvent(input$upload_deg_button, {
       req(input$deg_files) # Make sure file uploaded
@@ -70,7 +90,7 @@ uploadTabServer <- function(id, u_degnames, u_degpaths) {
       u_degnames$labels <- c(u_degnames$labels, lab) # set u_degnames 
     })
     
-    # when delete button clicked
+    # when deg delete button clicked
     observeEvent(input$delete_degs, {
       req(input$selected_degs) # Make sure DEG selected
       
@@ -82,13 +102,7 @@ uploadTabServer <- function(id, u_degnames, u_degpaths) {
       u_degnames$labels <- setdiff(u_degnames$labels, input$selected_degs)
     })
     
-    # update select inputs based on # file inputs
-    observe({
-      updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
-      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=u_degnames_reactive())
-    })
-    
-    # reactively update which table is read based on selection
+    # reactively update which deg table is read based on selection
     deg_to_table <- reactive ({
       req(input$deg_table_select)
       df <- read.csv(u_degpaths()[[input$deg_table_select]], 
@@ -101,6 +115,45 @@ uploadTabServer <- function(id, u_degnames, u_degpaths) {
     output$deg_table = DT::renderDataTable({
       deg_to_table()
     })
+    
+    
+    # <!----- RICH RESULT FILE MANAGEMENT -----!>
+    # when rich result upload button clicked
+    observeEvent(input$upload_rr_button, {
+      req(input$rr_files) # Make sure file uploaded
+      
+      lab <- input$rr_files$name
+      df <- read.delim(input$rr_files$datapath, header=TRUE, sep='\t')
+      names(df) <- lab
+      
+      u_rrdfs <- c(u_rrdfs, df) # set u_rrdfs
+      u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
+    })
+    
+    # when rr delete button clicked
+    observeEvent(input$delete_rrs, {
+      req(input$selected_rrs) # Make sure DEG selected
+      
+      #nvector <- intersect(names(u_rrdfs()), u_rrnames$labels)
+      #subset_nvector <- u_rrdfs()[nvector]
+      
+      # remove selected files from u_rrdfs and u_rrnames 
+      #u_rrdfs <- setdiff(u_rrdfs, input$selected_rrs)
+      u_rrnames$labels <- setdiff(u_rrnames$labels, input$selected_rrs)
+    })
+    
+    # reactively update which rr table is read based on selection
+    rr_to_table <- reactive ({
+      req(input$rr_table_select)
+      df <- u_rrdfs()[input$rr_table_select]
+      return(df)
+    })
+    
+    # output rr table
+    output$rr_table = DT::renderDataTable({
+      #rr_to_table() fix later
+    })
+    
   })
   
 }
