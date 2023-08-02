@@ -94,9 +94,6 @@ uploadTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
     observeEvent(input$delete_degs, {
       req(input$selected_degs) # Make sure DEG selected
       
-      nvector <- intersect(names(u_degpaths()), u_degnames$labels)
-      subset_nvector <- u_degpaths()[nvector]
-      
       # remove selected files from u_degpaths and u_degnames 
       u_degpaths <- setdiff(u_degpaths(), input$selected_degs)
       u_degnames$labels <- setdiff(u_degnames$labels, input$selected_degs)
@@ -124,9 +121,8 @@ uploadTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
       
       lab <- input$rr_files$name
       df <- read.delim(input$rr_files$datapath, header=TRUE, sep='\t')
-      names(df) <- lab
       
-      u_rrdfs <- c(u_rrdfs, df) # set u_rrdfs
+      u_rrdfs[[lab]] <- df # set u_rrdfs
       u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
     })
     
@@ -134,24 +130,21 @@ uploadTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
     observeEvent(input$delete_rrs, {
       req(input$selected_rrs) # Make sure DEG selected
       
-      #nvector <- intersect(names(u_rrdfs()), u_rrnames$labels)
-      #subset_nvector <- u_rrdfs()[nvector]
-      
       # remove selected files from u_rrdfs and u_rrnames 
-      #u_rrdfs <- setdiff(u_rrdfs, input$selected_rrs)
+      u_rrdfs <- setdiff(names(u_rrdfs), input$selected_rrs)
       u_rrnames$labels <- setdiff(u_rrnames$labels, input$selected_rrs)
     })
     
     # reactively update which rr table is read based on selection
     rr_to_table <- reactive ({
       req(input$rr_table_select)
-      df <- u_rrdfs()[input$rr_table_select]
+      df <- u_rrdfs[[input$rr_table_select]]
       return(df)
     })
     
     # output rr table
     output$rr_table = DT::renderDataTable({
-      #rr_to_table() fix later
+      rr_to_table()
     })
     
   })

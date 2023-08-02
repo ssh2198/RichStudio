@@ -8,18 +8,26 @@ enrichTabUI <- function(id) {
       sidebarPanel(
         tabsetPanel(
           tabPanel("Enrich",
-                   br(),
-                   textInput(ns('header_input'), "Header", value="geneID"),
-                   selectInput(ns('anntype_select'), "Select annotation source", c("GO", "KEGG")),
-                   selectInput(ns('keytype_select'), "Select keytype", c("ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS",
-                                                                     "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "FLYBASE",
-                                                                     "FLYBASECG", "FLYBASEPROT", "GENENAME", "GO", "GOALL", "MAP",
-                                                                     "ONTOLOGY", "ONTOLOGYALL", "PATH", "PMID", "REFSEQ", "SYMBOL",
-                                                                     "UNIGENE", "UNIPROT"), selected="SYMBOL"),
-                   selectInput(ns('ont_select'), "Select ontology", c("BP", "MF", "CC")),
-                   actionButton(ns('enrich_deg'), "Enrich")
+            br(),
+            textInput(ns('header_input'), "Header", value="geneID"),
+            selectInput(ns('anntype_select'), "Select annotation source", c("GO", "KEGG")),
+            selectInput(ns('keytype_select'), "Select keytype", 
+                        c("ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS",
+                          "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "FLYBASE",
+                          "FLYBASECG", "FLYBASEPROT", "GENENAME", "GO", "GOALL", "MAP",
+                          "ONTOLOGY", "ONTOLOGYALL", "PATH", "PMID", "REFSEQ", "SYMBOL",
+                          "UNIGENE", "UNIPROT"), selected="SYMBOL"),
+             selectInput(ns('ont_select'), "Select ontology", c("BP", "MF", "CC")),
+             actionButton(ns('enrich_deg'), "Enrich")
           ),
-          tabPanel("Cluster")
+          tabPanel("Cluster",
+            br(),
+            selectInput(ns('cluster_by'), "Cluster by", c("Mean Pvalue", "Median Pvalue", "Min Pvalue", "Mean Padj", "Median Padj", "Min Padj")),
+            numericInput(ns('cutoff'), "Cutoff", value=.5, min=0, max=1),
+            numericInput(ns('overlap'), "Overlap", value=.5, min=0, max=1),
+            numericInput(ns('min_size'), "Overlap", value=2, min=0),
+            actionButton(ns('cluster'), "Cluster selection")
+          )
         )
       ),
       mainPanel(
@@ -59,13 +67,14 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
     # enrich selected degs
     observeEvent(input$enrich_deg, {
       req(input$selected_degs)
-      # enrich
-      df <- shiny_enrich(x=u_degpaths()[[input$selected_degs]], header=input$header_input, 
-                         anntype=input$anntype_select, keytype=input$keytype_select, ontology=input$ont_select)
-      lab <- input$selected_degs
-      names(df) <- lab
+      x <- read.delim(u_degpaths()[[input$selected_degs]], header=TRUE, sep='\t')
       
-      #u_rrdfs(append(u_rrdfs(), list(df=df))) # set u_rrdfs
+      # enrich
+      df <- shiny_enrich(x=x, header=as.character(input$header_input), 
+                         anntype=as.character(input$anntype_select), keytype=as.character(input$keytype_select), ontology=as.character(input$ont_select))
+      lab <- input$selected_degs
+      
+      u_rrdfs[[lab]] <- df@result # set u_rrdfs
       u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
     })
     
