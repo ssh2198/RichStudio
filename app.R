@@ -69,7 +69,7 @@ server <- function(input, output) {
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs)
   enrichTabServer("enrich", u_degnames=u_degnames, u_degpaths=u_degpaths, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
-  visualizeTabServer("visualize")
+  visualizeTabServer("visualize", u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
   
 }
 

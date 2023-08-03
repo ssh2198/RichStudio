@@ -21,11 +21,11 @@ output = "output/"
 
 
 # sample genesets to try
-gs1 <- read.delim("data/try-this/GO_HF12wk_vs_WT12wk.txt")
-gs2 <- read.delim("data/try-this/KEGG_HF36wk_vs_WT12wk.txt")
-gs3 <- read.delim("data/try-this/GO_WT36wk_vs_WT12wk.txt")
+#gs1 <- read.delim("data/try-this/GO_HF12wk_vs_WT12wk.txt")
+#gs2 <- read.delim("data/try-this/KEGG_HF36wk_vs_WT12wk.txt")
+#gs3 <- read.delim("data/try-this/GO_WT36wk_vs_WT12wk.txt")
 
-genesets <- list(gs1, gs2, gs3)
+#genesets <- list(gs1, gs2, gs3)
 
 # to test functionality of the functions, run
 
@@ -103,6 +103,7 @@ cluster <- function(merged_gs, cutoff, overlap, minSize) {
   return(clustered_gs)
 }
 
+
 # return list of terms & corresponding pvalues for each cluster
 cluster_list <- function(clustered_gs, merged_gs, genesets) {
   
@@ -130,6 +131,7 @@ cluster_list <- function(clustered_gs, merged_gs, genesets) {
   return(cluster_list)
 }
 
+
 # prepares the rich cluster result for heatmap
 hmap_prepare <- function(clustered_gs) {
   
@@ -140,18 +142,14 @@ hmap_prepare <- function(clustered_gs) {
   # order clusters numerically
   x <- x[order(as.numeric(x$Cluster)), ]
   
-  # define Padj column names
-  padj_cols <- c()
-  for (i in seq_along(genesets)) {
-    padj_cols <- c(padj_cols, paste0('Padj', i))
-  }
-  
-  # subset Padj columns of clustered_gs into values
+  # subset Padj columns of clustered_gs into new df values
+  padj_cols <- grep("^Padj\\d+$", colnames(clustered_gs), value=TRUE)
+  print(padj_cols) # debug test
   values <- data.frame()
   values <- clustered_gs[, padj_cols]
-  values$p_rank <- rowMeans(values, na.rm=TRUE)
   
-  # order clusters by p_rank
+  # order clusters by p_rank (mean Padj)
+  values$p_rank <- rowMeans(values, na.rm=TRUE)
   setorder(values, p_rank, na.last=TRUE)
   values <- dplyr::select(values, -p_rank)
   
@@ -161,17 +159,14 @@ hmap_prepare <- function(clustered_gs) {
   return(final_data)
 }
 
+
+# CHANGE COLNAME LATER
 # returns the heatmap
-make_heatmap <- function(final_data, genesets, as_plotly=FALSE) {
+make_heatmap <- function(final_data, as_plotly=TRUE) {
   hmap <- final_data
   hmap$Cluster <- sub("^", "Cluster", hmap$Cluster) # prefix with 'Cluster'
   
-  # rename 'Padj' columns to 'GS'
-  new_cols <- c()
-  for (i in seq_along(genesets)) {
-    new_cols <- c(new_cols, paste0('GS', i))
-  }
-  colnames(hmap) <- c('Term', 'Cluster', new_cols)
+  colnames(hmap) <- sub("^Padj", "GS", colnames(hmap)) # replace "Padj" with "GS"
   
   # melt the data for heatmap construction
   melted_data <- reshape2::melt(hmap)
@@ -181,7 +176,7 @@ make_heatmap <- function(final_data, genesets, as_plotly=FALSE) {
     p <- ggplot(melted_data, aes(variable, Term)) +
       geom_tile(aes(fill=value), colour='white') +
       labs(x='Genesets', y='Clusters', title='Adjusted p-value per cluster') +
-      scale_y_discrete(labels=melted_data$Cluster) +
+      scale_y_discrete(labels=melted_data$Term) +
       scale_fill_gradient(low='red', high='green') +
       theme(axis.text=element_text(size=12))
     return(p)

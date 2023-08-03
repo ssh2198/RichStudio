@@ -58,7 +58,7 @@ enrichTabUI <- function(id) {
           tabPanel("Cluster Result",
             br(),
             p("Clustered genesets will appear here", style="color:grey"),
-            selectInput(ns('selected_clus'), "Select cluster results", choices=NULL),
+            selectInput(ns('selected_clus'), "Select cluster results", choices=NULL, multiple=TRUE),
             actionButton(ns('delete_clus'), "Delete selection"),
             br(),
             br(),
@@ -152,7 +152,8 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs, u_cl
     # <!----- CLUSTERING LOGIC -----!>
     # clustering
     observeEvent(input$cluster, {
-      req(input$selected_rrs) # Make sure rich results selected
+      req(input$selected_rrs) # Require rich result selection
+      req(input$cluster_name) # Require cluster name
       
       genesets <- list()
       for (i in seq_along(input$selected_rrs)) {
@@ -164,7 +165,8 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs, u_cl
       print("done merge")
       clustered_gs <- cluster(merged_gs=merged_gs, cutoff=input$cutoff, overlap=input$overlap, minSize=input$min_size)
       print("done clustering")
-      cluster_list <- cluster_list(clustered_gs=clustered_gs, merged_gs=merged_gs, genesets=genesets)
+      cluster_list <- cluster_list(clustered_gs=clustered_gs, merged_gs=merged_gs, genesets=genesets) # get cluster info
+      clustered_gs <- hmap_prepare(clustered_gs) # final data
       
       # store in reactive
       lab <- input$cluster_name
