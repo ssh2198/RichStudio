@@ -10,7 +10,7 @@ visualizeTabUI <- function(id) {
     tabsetPanel(
       tabPanel("Heatmap",
         br(),
-        selectInput(ns("clusdf_select"), "Select cluster result", choices=NULL, multiple=FALSE),
+        selectInput(ns("clusdf_select"), "View cluster result", choices=NULL, multiple=FALSE),
         br(),
         plotlyOutput(ns('clusdf_hmap')),
         br(),
@@ -49,7 +49,7 @@ visualizeTabServer <- function(id, u_clusnames, u_clusdfs, u_cluslists) {
     plot_clusdf_hmap <- reactive({
       req(input$clusdf_select)
       df <- u_clusdfs[[input$clusdf_select]]
-      hmap <- make_heatmap(df, as_plotly=TRUE)
+      hmap <- comprehensive_hmap(df, names(u_clusdfs), as_plotly=TRUE)
       return(hmap)
     })
     output$clusdf_hmap <- renderPlotly({

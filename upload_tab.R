@@ -16,7 +16,7 @@ uploadTabUI <- function(id) {
             textInput(ns('textinput_name'), "Name", placeholder="Set name for pasted gene list"),
             fileInput(ns('deg_files'), 'File Input', multiple=FALSE, accept=c('.csv', '.tsv', '.xls', '.txt')),
             helpText("Accepted formats: .csv, .tsv, .xls, .txt"),
-            selectInput(ns('deg_separator_select'), "Element separator", c("Comma", "Space", "Tab", "Guess"), selected="Guess"),
+            selectInput(ns('deg_sep'), "Element separator", c("Comma", "Space", "Tab", "Guess"), selected="Guess"),
             actionButton(ns('upload_deg_button'), "Upload")
           ),
           # Rich Result upload panel
@@ -24,7 +24,8 @@ uploadTabUI <- function(id) {
             br(),
             fileInput(ns('rr_files'), 'File Input', multiple=FALSE, accept=c('.csv', '.tsv', '.xls', '.txt')),
             helpText("Accepted formats: .csv, .tsv, .xls, .txt"),
-            selectInput(ns('rr_separator_select'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
+            selectInput(ns('rr_sep'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
+            checkboxInput(ns('rr_rownames'), "First column contains rownames", value=FALSE),
             actionButton(ns('upload_rr_button'), "Upload")
           )
         )
@@ -122,7 +123,23 @@ uploadTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
       req(input$rr_files) # Make sure file uploaded
       
       lab <- input$rr_files$name
-      df <- read.delim(input$rr_files$datapath, header=TRUE, sep='\t')
+      
+      # fix logic for csv files later
+      if (input$rr_sep == ",") {
+        if (input$rr_rownames == TRUE) {
+          df <- read.csv(input$rr_files$datapath, row.names=1)
+        } else {
+          df <- read.csv(input$rr_files$datapath)
+        }
+      } else {
+        if (input$rr_rownames == TRUE) {
+          
+        } else {
+          df <- read.delim(input$rr_files$datapath, header=TRUE, sep='\t')
+        }
+      }
+      
+      if (input$rr_rownames == TRUE)
       
       u_rrdfs[[lab]] <- df # set u_rrdfs
       u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 

@@ -26,6 +26,7 @@ output = "output/"
 #gs3 <- read.delim("data/try-this/GO_WT36wk_vs_WT12wk.txt")
 
 #genesets <- list(gs1, gs2, gs3)
+#gs_names <- c("GO_HF12wk_vs_WT12wk.txt", "KEGG_HF36wk_vs_WT12wk.txt", "GO_WT36wk_vs_WT12wk.txt")
 
 # to test functionality of the functions, run
 
@@ -98,8 +99,14 @@ merge_genesets <- function(genesets) {
 
 # clusters the merged geneset
 cluster <- function(merged_gs, cutoff, overlap, minSize) {
+  # cluster from richR package
   clustered_gs <- richCluster(x=merged_gs, gene=TRUE, cutoff=cutoff, overlap=overlap, minSize=minSize) # from richR
+  
+  # for debugging
   write.table(clustered_gs, file='/Users/sarahhong/Desktop/Hur Lab/enrichment-analysis/data/clustered_data.txt', sep='\t')
+  
+  # order clusters by ascending cluster #
+  clustered_gs <- clustered_gs[order(as.numeric(clustered_gs$AnnotationCluster)), ]
   return(clustered_gs)
 }
 
@@ -107,19 +114,19 @@ cluster <- function(merged_gs, cutoff, overlap, minSize) {
 # return list of terms & corresponding pvalues for each cluster
 cluster_list <- function(clustered_gs, merged_gs, genesets) {
   
-  # order clusters numerically
-  x <- clustered_gs[order(as.numeric(clustered_gs$AnnotationCluster)), ]
+  # get list of Annots in cluster, index=cluster#
   term_indices <- sapply(x$Cluster, function(x) unlist(strsplit(x, ',')))
   
+  # for each cluster #, find matching row in merged_gs corresponding to Annot
   cluster_list <- data.frame()
   for (i in seq_along(term_indices)) {
     annots <- term_indices[[i]] # get Annot string from term_indices
-    matching_rows <- merged_gs[merged_gs$Annot %in% annots, ]
-    matching_rows$Cluster <- i
-    cluster_list <- rbind(cluster_list, matching_rows)
+    matching_rows <- merged_gs[merged_gs$Annot %in% annots, ] # find matching rows
+    matching_rows$Cluster <- i # get cluster #
+    cluster_list <- rbind(cluster_list, matching_rows) # append matching rows
   }
   
-  # define unnecessary columns
+  # define unnecessary columns (change later if you want)
   cols_to_filter <- c('Term', 'Annot')
   for (i in seq_along(genesets)) {
     cols_to_filter <- c(cols_to_filter, paste0('Pvalue', i))
@@ -129,6 +136,44 @@ cluster_list <- function(clustered_gs, merged_gs, genesets) {
   # filter cluster_list
   cluster_list <- cluster_list[, c('Cluster', cols_to_filter)]
   return(cluster_list)
+}
+
+cluster_list_new <- function(clustered_gs, merged_gs, gs_names) {
+  
+  # get list of Annots in cluster, index=cluster#
+  term_indices <- sapply(x$Cluster, function(x) unlist(strsplit(x, ',')))
+  
+  # for each cluster #, find matching row in merged_gs corresponding to Annot
+  cluster_list <- data.frame()
+  for (i in seq_along(term_indices)) {
+    annots <- term_indices[[i]] # get Annot string from term_indices
+    matching_rows <- merged_gs[merged_gs$Annot %in% annots, ] # find matching rows
+    matching_rows$Cluster <- i # get cluster #
+    cluster_list <- rbind(cluster_list, matching_rows) # append matching rows
+  }
+  
+  # define wanted columns
+  og_pval_cols <- grep("^Pvalue\\d+$", colnames(cluster_list), value=TRUE)
+  pval_cols <- gsub("\\d+$", "", og_pval_cols) # get rid of number
+  pval_cols <- paste(pval_cols, gs_names, sep="_") # concat gs name to end
+  
+  og_padj_cols <- grep("^Padj\\d+$", colnames(cluster_list), value=TRUE)
+  padj_cols <- gsub("\\d+$", "", og_padj_cols)
+  padj_cols <- paste(padj_cols, gs_names, sep="_")
+  
+  og_geneid_cols <- grep("^GeneID\\d+$", colnames(cluster_list), value=TRUE)
+  geneid_cols <- gsub("\\d+$", "", og_geneid_cols)
+  geneid_cols <- paste(geneid_cols, gs_names, sep="_")
+  
+  og_cols_to_subset <- c(og_pval_cols, og_padj_cols, og_geneid_cols)
+  cols_to_subset <- c(pval_cols, padj_cols, geneid_cols)
+  
+  # create cluster_list
+  cluster_list <- cluster_list[, c("Cluster", "Term", "Annot", og_cols_to_subset)]
+  colnames(cluster_list) <- c("Cluster", "Term", "Annot", cols_to_subset)
+  
+  # order columns of cluster_list by geneset
+  # todo later
 }
 
 
@@ -162,11 +207,18 @@ hmap_prepare <- function(clustered_gs) {
 
 # CHANGE COLNAME LATER
 # returns the heatmap
-make_heatmap <- function(final_data, as_plotly=TRUE) {
-  hmap <- final_data
-  hmap$Cluster <- sub("^", "Cluster", hmap$Cluster) # prefix with 'Cluster'
+comprehensive_hmap <- function(final_data, gs_names, as_plotly=TRUE) {
+  term_cluster_cols <- final_data[, c("Term", "Cluster")]
+  term_cluster_cols$Cluster <- sub("^", "Cluster", term_cluster_cols$Cluster) # prefix with 'Cluster'
   
-  colnames(hmap) <- sub("^Padj", "GS", colnames(hmap)) # replace "Padj" with "GS"
+  # change Padj cols to file name
+  value_cols <- hmap[, grep("^Padj\\d+$", colnames(final_data), value=TRUE)]
+  names(value_cols) <- gs_names
+  
+  # bind two dfs together
+  hmap <- cbind(term_cluster_cols, value_cols)
+  
+  #colnames(hmap) <- sub("^Padj", "GS", colnames(hmap)) # replace "Padj" with "GS"
   
   # melt the data for heatmap construction
   melted_data <- reshape2::melt(hmap)
