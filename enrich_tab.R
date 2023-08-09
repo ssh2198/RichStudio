@@ -30,7 +30,7 @@ enrichTabUI <- function(id) {
             selectInput(ns('cluster_by'), "Cluster by", c("Mean Pvalue", "Median Pvalue", "Min Pvalue", "Mean Padj", "Median Padj", "Min Padj")),
             numericInput(ns('cutoff'), "Cutoff", value=.5, min=0, max=1),
             numericInput(ns('overlap'), "Overlap", value=.5, min=0, max=1),
-            numericInput(ns('min_size'), "Overlap", value=2, min=0),
+            numericInput(ns('min_size'), "Min size", value=2, min=0),
             actionButton(ns('cluster'), "Cluster")
           )
         )
@@ -156,9 +156,11 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs, u_cl
       req(input$cluster_name) # Require cluster name
       
       genesets <- list()
+      gs_names <- c()
       for (i in seq_along(input$selected_rrs)) {
         tmp <- input$selected_rrs[i]
         genesets <- c(genesets, list(u_rrdfs[[tmp]]))
+        gs_names <-c(gs_names, i)
       }
       
       merged_gs <- merge_genesets(genesets)
@@ -166,7 +168,7 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs, u_cl
       clustered_gs <- cluster(merged_gs=merged_gs, cutoff=input$cutoff, overlap=input$overlap, minSize=input$min_size)
       print("done clustering")
       cluster_list <- cluster_list(clustered_gs=clustered_gs, merged_gs=merged_gs, genesets=genesets) # get cluster info
-      clustered_gs <- hmap_prepare(clustered_gs) # final data
+      clustered_gs <- hmap_prepare(clustered_gs, gs_names=gs_names) # final data
       
       # store in reactive
       lab <- input$cluster_name

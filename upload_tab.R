@@ -139,8 +139,6 @@ uploadTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
         }
       }
       
-      if (input$rr_rownames == TRUE)
-      
       u_rrdfs[[lab]] <- df # set u_rrdfs
       u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
     })

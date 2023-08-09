@@ -38,16 +38,16 @@ output = "output/"
 
 
 # SAMPLE GENESETS (.CSV)
-go1 <- read.csv("data/rich-results/aug5-csv-richr/DRG _padj_GO_Aug-3way.csv", row.names=1)
-go2 <- read.csv("data/rich-results/aug5-csv-richr/SCN _padj_GO_Aug-3way.csv", row.names=1)
-go3 <- read.csv("data/rich-results/aug5-csv-richr/Shared _padj_GO_Aug-3way.csv", row.names=1)
+#go1 <- read.csv("data/rich-results/aug5-csv-richr/DRG _padj_GO_Aug-3way.csv", row.names=1)
+#go2 <- read.csv("data/rich-results/aug5-csv-richr/SCN _padj_GO_Aug-3way.csv", row.names=1)
+#go3 <- read.csv("data/rich-results/aug5-csv-richr/Shared _padj_GO_Aug-3way.csv", row.names=1)
 
-kegg1 <- read.csv("data/rich-results/aug5-csv-richr/DRG _padj_KEGG_Aug-3way.csv", row.names=1)
-kegg2 <- read.csv("data/rich-results/aug5-csv-richr/SCN _padj_KEGG_Aug-3way.csv", row.names=1)
-kegg3 <- read.csv("data/rich-results/aug5-csv-richr/Shared _padj_KEGG_Aug-3way.csv", row.names=1)
+#kegg1 <- read.csv("data/rich-results/aug5-csv-richr/DRG _padj_KEGG_Aug-3way.csv", row.names=1)
+#kegg2 <- read.csv("data/rich-results/aug5-csv-richr/SCN _padj_KEGG_Aug-3way.csv", row.names=1)
+#kegg3 <- read.csv("data/rich-results/aug5-csv-richr/Shared _padj_KEGG_Aug-3way.csv", row.names=1)
 
-genesets <- list(go3, kegg1, kegg2)
-gs_names <- c("Shared _padj_GO_Aug-3way.csv", "DRG _padj_KEGG_Aug-3way.cs", "SCN _padj_KEGG_Aug-3way.csv")
+#genesets <- list(go3, kegg1, kegg2)
+#gs_names <- c("Shared _padj_GO_Aug-3way.csv", "DRG _padj_KEGG_Aug-3way.cs", "SCN _padj_KEGG_Aug-3way.csv")
 
 
 # this function merges a list of genesets together to prepare for clustering
@@ -114,7 +114,7 @@ merge_genesets <- function(genesets) {
 # clusters the merged geneset
 cluster <- function(merged_gs, cutoff, overlap, minSize) {
   # cluster from richR package
-  clustered_gs <- richCluster(x=merged_gs, gene=TRUE, cutoff=.5, overlap=.5, minSize=3) # from richR
+  clustered_gs <- richCluster(x=merged_gs, gene=TRUE, cutoff=.5, overlap=.5, minSize=2) # from richR
   
   # for debugging
   write.table(clustered_gs, file='/Users/sarahhong/Desktop/Hur Lab/enrichment-analysis/data/clustered_data.txt', sep='\t')
@@ -192,7 +192,7 @@ cluster_list_new <- function(clustered_gs, merged_gs, gs_names) {
 
 
 # prepares the rich cluster result for heatmap
-hmap_prepare <- function(clustered_gs) {
+hmap_prepare <- function(clustered_gs, gs_names) {
   
   # create tibble with Term and AnnotationCluster
   x <- as_tibble(cbind(clustered_gs$Term, clustered_gs$AnnotationCluster))
@@ -205,6 +205,7 @@ hmap_prepare <- function(clustered_gs) {
   padj_cols <- grep("^Padj\\d+$", colnames(clustered_gs), value=TRUE)
   values <- data.frame()
   values <- clustered_gs[, padj_cols]
+  colnames(values) <- gs_names  # change Padj colnames to file name
   
   # order clusters by p_rank (mean Padj)
   values$p_rank <- rowMeans(values, na.rm=TRUE)
@@ -212,6 +213,7 @@ hmap_prepare <- function(clustered_gs) {
   values <- dplyr::select(values, -p_rank)
   
   # combine Term and Cluster with Padj values
+  final_data <- data.frame()
   final_data <- cbind(x, values)
   
   return(final_data)
@@ -220,20 +222,7 @@ hmap_prepare <- function(clustered_gs) {
 
 # CHANGE COLNAME LATER
 # returns the heatmap
-comprehensive_hmap <- function(final_data, gs_names, as_plotly=TRUE) {
-  
-  term_cluster_cols <- data.frame()
-  term_cluster_cols <- final_data[, c("Term", "Cluster")]
-  term_cluster_cols$Cluster <- sub("^", "Cluster", term_cluster_cols$Cluster) # prefix with 'Cluster'
-  
-  # change Padj cols to file name
-  value_cols <- final_data[, grep("^Padj\\d+$", colnames(final_data), value=TRUE)]
-  names(value_cols) <- gs_names
-  
-  # bind two dfs together
-  hmap <- cbind(term_cluster_cols, value_cols)
-  
-  #colnames(hmap) <- sub("^Padj", "GS", colnames(hmap)) # replace "Padj" with "GS"
+comprehensive_hmap <- function(final_data, as_plotly=TRUE) {
   
   # melt the data for heatmap construction
   melted_data <- reshape2::melt(hmap)
@@ -261,4 +250,53 @@ comprehensive_hmap <- function(final_data, gs_names, as_plotly=TRUE) {
     )
     return(plotly_p)
   }
+}
+
+# testing
+# term_vec <- c("blood vessel morphogenesis", "myelination", "cell migration", "regulation of protein phosphorylation")
+cluster_hmap <- function(cluster_list, term_vec, final_data) {
+  
+  # find cluster associated with term
+  term_name_df <- final_data[final_data$Term %in% term_vec, ]
+  term_nums <- term_name_df$Cluster # list of cluster #s
+  
+  cluster_hmap <- data.frame()
+  for (i in seq_along(term_nums)) {
+    tmp <- cluster_list[cluster_list$Cluster == term_nums[i], ]
+    cluster_hmap <- rbind(cluster_hmap, tmp)
+  }
+  
+  # subset Padj columns
+  padj_cols <- grep("^Padj", colnames(cluster_hmap), value=TRUE)
+  cluster_hmap <- cluster_hmap[, c("Term", padj_cols)]
+  # remove "Padj_" from colnames
+  colnames(cluster_hmap) <- gsub("^Padj_", "", colnames(cluster_hmap))
+  
+  # melt the data for heatmap construction
+  melted_chmap_data <- reshape2::melt(cluster_hmap)
+  
+  # plot the heatmap
+  if (as_plotly == FALSE) {
+    p <- ggplot(melted_chmap_data, aes(variable, Term)) +
+      geom_tile(aes(fill=value), colour='white') +
+      labs(x='Genesets', y='Clusters', title='Adjusted p-value per cluster') +
+      scale_y_discrete(labels=melted_data$Term) +
+      scale_fill_gradient(low='red', high='green') +
+      theme(axis.text=element_text(size=12))
+    return(p)
+  }
+  else if (as_plotly == TRUE) {
+    plotly_p <- plot_ly (
+      data = melted_chmap_data,
+      x = ~variable,
+      y = ~Term,
+      z = ~value,
+      type = "heatmap",
+      colors = c('red', 'green'),
+      text = ~value,
+      hoverinfo = "text"
+    )
+    return(plotly_p)
+  }
+  
 }
