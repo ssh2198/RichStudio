@@ -20,7 +20,7 @@ output = "output/"
 
 
 
-# sample genesets to try
+# SAMPLE GENESETS
 #gs1 <- read.delim("data/try-this/GO_HF12wk_vs_WT12wk.txt")
 #gs2 <- read.delim("data/try-this/KEGG_HF36wk_vs_WT12wk.txt")
 #gs3 <- read.delim("data/try-this/GO_WT36wk_vs_WT12wk.txt")
@@ -28,13 +28,26 @@ output = "output/"
 #genesets <- list(gs1, gs2, gs3)
 #gs_names <- c("GO_HF12wk_vs_WT12wk.txt", "KEGG_HF36wk_vs_WT12wk.txt", "GO_WT36wk_vs_WT12wk.txt")
 
-# to test functionality of the functions, run
-
+# to test functionality of the functions, run:
 #genesets %>%
 #  merge_genesets() %>%
 #  cluster(cutoff=0.5, overlap=0.5, minSize=2) %>%
 #  hmap_prepare() %>%
-#  make_heatmap(genesets=genesets)
+#  comprehensive_hmap(genesets=genesets, gs_names=gs_names)
+
+
+
+# SAMPLE GENESETS (.CSV)
+go1 <- read.csv("data/rich-results/aug5-csv-richr/DRG _padj_GO_Aug-3way.csv", row.names=1)
+go2 <- read.csv("data/rich-results/aug5-csv-richr/SCN _padj_GO_Aug-3way.csv", row.names=1)
+go3 <- read.csv("data/rich-results/aug5-csv-richr/Shared _padj_GO_Aug-3way.csv", row.names=1)
+
+kegg1 <- read.csv("data/rich-results/aug5-csv-richr/DRG _padj_KEGG_Aug-3way.csv", row.names=1)
+kegg2 <- read.csv("data/rich-results/aug5-csv-richr/SCN _padj_KEGG_Aug-3way.csv", row.names=1)
+kegg3 <- read.csv("data/rich-results/aug5-csv-richr/Shared _padj_KEGG_Aug-3way.csv", row.names=1)
+
+genesets <- list(go3, kegg1, kegg2)
+gs_names <- c("Shared _padj_GO_Aug-3way.csv", "DRG _padj_KEGG_Aug-3way.cs", "SCN _padj_KEGG_Aug-3way.csv")
 
 
 # this function merges a list of genesets together to prepare for clustering
@@ -42,6 +55,7 @@ merge_genesets <- function(genesets) {
   
   # suffix all non 'Term' columns with their index
   for (i in seq_along(genesets)) {
+    rownames(genesets[[i]]) <- NULL
     non_term_cols <- colnames(genesets[[i]])
     non_term_cols[-which(non_term_cols == 'Term')] <- paste0(non_term_cols[-which(non_term_cols == 'Term')], i)
     colnames(genesets[[i]]) <- non_term_cols
@@ -100,7 +114,7 @@ merge_genesets <- function(genesets) {
 # clusters the merged geneset
 cluster <- function(merged_gs, cutoff, overlap, minSize) {
   # cluster from richR package
-  clustered_gs <- richCluster(x=merged_gs, gene=TRUE, cutoff=cutoff, overlap=overlap, minSize=minSize) # from richR
+  clustered_gs <- richCluster(x=merged_gs, gene=TRUE, cutoff=.5, overlap=.5, minSize=3) # from richR
   
   # for debugging
   write.table(clustered_gs, file='/Users/sarahhong/Desktop/Hur Lab/enrichment-analysis/data/clustered_data.txt', sep='\t')
@@ -115,7 +129,7 @@ cluster <- function(merged_gs, cutoff, overlap, minSize) {
 cluster_list <- function(clustered_gs, merged_gs, genesets) {
   
   # get list of Annots in cluster, index=cluster#
-  term_indices <- sapply(x$Cluster, function(x) unlist(strsplit(x, ',')))
+  term_indices <- sapply(clustered_gs$Cluster, function(x) unlist(strsplit(x, ',')))
   
   # for each cluster #, find matching row in merged_gs corresponding to Annot
   cluster_list <- data.frame()
@@ -141,7 +155,7 @@ cluster_list <- function(clustered_gs, merged_gs, genesets) {
 cluster_list_new <- function(clustered_gs, merged_gs, gs_names) {
   
   # get list of Annots in cluster, index=cluster#
-  term_indices <- sapply(x$Cluster, function(x) unlist(strsplit(x, ',')))
+  term_indices <- sapply(clustered_gs$Cluster, function(x) unlist(strsplit(x, ',')))
   
   # for each cluster #, find matching row in merged_gs corresponding to Annot
   cluster_list <- data.frame()
@@ -189,7 +203,6 @@ hmap_prepare <- function(clustered_gs) {
   
   # subset Padj columns of clustered_gs into new df values
   padj_cols <- grep("^Padj\\d+$", colnames(clustered_gs), value=TRUE)
-  print(padj_cols) # debug test
   values <- data.frame()
   values <- clustered_gs[, padj_cols]
   
@@ -208,11 +221,13 @@ hmap_prepare <- function(clustered_gs) {
 # CHANGE COLNAME LATER
 # returns the heatmap
 comprehensive_hmap <- function(final_data, gs_names, as_plotly=TRUE) {
+  
+  term_cluster_cols <- data.frame()
   term_cluster_cols <- final_data[, c("Term", "Cluster")]
   term_cluster_cols$Cluster <- sub("^", "Cluster", term_cluster_cols$Cluster) # prefix with 'Cluster'
   
   # change Padj cols to file name
-  value_cols <- hmap[, grep("^Padj\\d+$", colnames(final_data), value=TRUE)]
+  value_cols <- final_data[, grep("^Padj\\d+$", colnames(final_data), value=TRUE)]
   names(value_cols) <- gs_names
   
   # bind two dfs together
