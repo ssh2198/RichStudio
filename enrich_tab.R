@@ -14,7 +14,7 @@ enrichTabUI <- function(id) {
           tabPanel("Enrich",
             br(),
             textInput(ns('header_input'), "Header", value="geneID"),
-            selectInput(ns('anntype_select'), "Select annotation source", c("GO", "KEGG")),
+            selectInput(ns('anntype_select'), "Select annotation source", c("GO", "KEGG", "Reactome", "KEGGM")),
             selectInput(ns('keytype_select'), "Select keytype", 
                         c("ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS",
                           "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "FLYBASE",
@@ -22,6 +22,7 @@ enrichTabUI <- function(id) {
                           "ONTOLOGY", "ONTOLOGYALL", "PATH", "PMID", "REFSEQ", "SYMBOL",
                           "UNIGENE", "UNIPROT"), selected="SYMBOL"),
              selectInput(ns('ont_select'), "Select ontology", c("BP", "MF", "CC")),
+             selectInput(ns('species_select'), "Select species", c("Human", "Mouse", "Rat")),
              actionButton(ns('enrich_deg'), "Enrich")
           ),
           tabPanel("Cluster",
@@ -105,6 +106,7 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs, u_cl
       # enrich
       df <- shiny_enrich(x=x, header=as.character(input$header_input), 
                          anntype=as.character(input$anntype_select), keytype=as.character(input$keytype_select), ontology=as.character(input$ont_select))
+      print("Done enriching")
       lab <- input$selected_degs
       
       u_rrdfs[[lab]] <- df@result # set u_rrdfs
@@ -160,19 +162,21 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs, u_cl
       for (i in seq_along(input$selected_rrs)) {
         tmp <- input$selected_rrs[i]
         genesets <- c(genesets, list(u_rrdfs[[tmp]]))
-        gs_names <-c(gs_names, i)
       }
+      names(genesets) <- input$selected_rrs
+      gs_names <- names(genesets)
       
       merged_gs <- merge_genesets(genesets)
       print("done merge")
       clustered_gs <- cluster(merged_gs=merged_gs, cutoff=input$cutoff, overlap=input$overlap, minSize=input$min_size)
       print("done clustering")
-      cluster_list <- cluster_list(clustered_gs=clustered_gs, merged_gs=merged_gs, genesets=genesets) # get cluster info
-      clustered_gs <- hmap_prepare(clustered_gs, gs_names=gs_names) # final data
+      cluster_list <- get_cluster_list(clustered_gs=clustered_gs, merged_gs=merged_gs, gs_names=gs_names) # get cluster info
+      final_data <- hmap_prepare(clustered_gs, gs_names=gs_names) # final data
+      final_data <- change_finaldata_valueby(final_data=final_data, cluster_list=cluster_list, value_by="mean")
       
       # store in reactive
       lab <- input$cluster_name
-      u_clusdfs[[lab]] <- clustered_gs # set u_clusdfs
+      u_clusdfs[[lab]] <- final_data # set u_clusdfs
       u_cluslists[[lab]] <- cluster_list # set u_cluslists
       u_clusnames$labels <- c(u_clusnames$labels, lab) # set u_clusnames
     })
