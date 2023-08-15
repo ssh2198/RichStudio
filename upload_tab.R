@@ -61,13 +61,13 @@ uploadTabUI <- function(id) {
 }
 
 
-uploadTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
+uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs) {
   
   moduleServer(id, function(input, output, session) {
     
     # create reactive objs to make accessible in other modules
     u_degnames_reactive <- reactive(u_degnames$labels) 
-    u_degpaths_reactive <- reactive(reactiveValuesToList(u_degpaths)) 
+    u_degdfs_reactive <- reactive(u_degdfs) 
     u_rrnames_reactive <- reactive(u_rrnames$labels) 
     u_rrdfs_reactive <- reactive(u_rrdfs)
     
@@ -86,10 +86,9 @@ uploadTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
       req(input$deg_files) # Make sure file uploaded
       
       lab <- input$deg_files$name
-      dp <- input$deg_files$datapath
-      names(dp) <- lab
+      df <- read.delim(input$deg_files$datapath, header=TRUE, sep='\t') # read uploaded degfile
       
-      u_degpaths(append(u_degpaths(), dp)) # set u_degpaths
+      u_degdfs[[lab]] <- df # set u_degdfs
       u_degnames$labels <- c(u_degnames$labels, lab) # set u_degnames 
     })
     
@@ -97,17 +96,15 @@ uploadTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
     observeEvent(input$delete_degs, {
       req(input$selected_degs) # Make sure DEG selected
       
-      # remove selected files from u_degpaths and u_degnames 
-      u_degpaths <- setdiff(u_degpaths(), input$selected_degs)
+      # remove selected files from u_degdfs and u_degnames 
+      u_degdfs <- setdiff(names(u_degdfs), input$selected_degs)
       u_degnames$labels <- setdiff(u_degnames$labels, input$selected_degs)
     })
     
     # reactively update which deg table is read based on selection
     deg_to_table <- reactive ({
       req(input$deg_table_select)
-      df <- read.csv(u_degpaths()[[input$deg_table_select]], 
-                     header=TRUE,
-                     sep='\t')
+      df <- u_degdfs[[input$deg_table_select]]
       return(df)
     })
     

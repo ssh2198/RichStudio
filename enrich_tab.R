@@ -73,13 +73,13 @@ enrichTabUI <- function(id) {
 }
 
 
-enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u_cluslists) {
+enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u_cluslists) {
   
   moduleServer(id, function(input, output, session) {
     
     # create reactive objs to make accessible in other modules
     u_degnames_reactive <- reactive(u_degnames$labels) 
-    u_degpaths_reactive <- reactive(reactiveValuesToList(u_degpaths)) 
+    u_degdfs_reactive <- reactive(u_degdfs) 
     u_rrnames_reactive <- reactive(u_rrnames$labels) 
     u_rrdfs_reactive <- reactive(u_rrdfs)
     u_clusnames_reactive <- reactive(u_clusnames$labels)
@@ -101,7 +101,7 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs, u_cl
     # enrich selected degs
     observeEvent(input$enrich_deg, {
       req(input$selected_degs)
-      x <- read.delim(u_degpaths()[[input$selected_degs]], header=TRUE, sep='\t')
+      x <- u_degdfs[[input$selected_degs]]
       
       # enrich
       df <- shiny_enrich(x=x, header=as.character(input$header_input), 
@@ -116,9 +116,7 @@ enrichTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs, u_cl
     # reactively update which deg table is read based on selection
     deg_to_table <- reactive ({
       req(input$deg_table_select)
-      df <- read.csv(u_degpaths()[[input$deg_table_select]], 
-                     header=TRUE,
-                     sep='\t')
+      df <- u_degdfs[[input$deg_table_select]]
       return(df)
     })
     
