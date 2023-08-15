@@ -101,16 +101,21 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
     # enrich selected degs
     observeEvent(input$enrich_deg, {
       req(input$selected_degs)
-      x <- u_degdfs[[input$selected_degs]]
       
-      # enrich
-      df <- shiny_enrich(x=x, header=as.character(input$header_input), 
-                         anntype=as.character(input$anntype_select), keytype=as.character(input$keytype_select), ontology=as.character(input$ont_select))
-      print("Done enriching")
-      lab <- input$selected_degs
+      for (i in seq_along(input$selected_degs)) {
+        x <- u_degdfs[[input$selected_degs[i]]]
+        
+        # enrich
+        df <- shiny_enrich(x=x, header=as.character(input$header_input), 
+                           anntype=as.character(input$anntype_select), keytype=as.character(input$keytype_select), ontology=as.character(input$ont_select))
+        print(paste("Done enriching", input$selected_degs[i]))
+        lab <- input$selected_degs[i]
+        
+        u_rrdfs[[lab]] <- df@result # set u_rrdfs
+        u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
+      }
+      print("Done enriching all DEG sets")
       
-      u_rrdfs[[lab]] <- df@result # set u_rrdfs
-      u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
     })
     
     # reactively update which deg table is read based on selection
