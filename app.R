@@ -16,10 +16,12 @@ library(ggplot2)
 library(dplyr)
 library(plotly)
 library(DT)
+library(heatmaply)
 library(devtools)
 
 #install_github("hurlab/richR")
 library(richR)
+library(shinyHeatmaply)
 
 #SET WORKING DIRECTORY
 getwd()

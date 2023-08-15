@@ -4,6 +4,7 @@ library(data.table)
 library(ggplot2)
 library(dplyr)
 library(plotly)
+library(heatmaply)
 
 library(devtools)
 install_github("hurlab/richR")
@@ -229,7 +230,10 @@ comprehensive_hmap <- function(final_data, cluster_list, as_plotly=TRUE, value_t
   colnames(subsetted_final_data) <- gsub(paste0("^", value_type, "_"), "", colnames(subsetted_final_data))
   
   # melt the data for heatmap construction
-  melted_data <- reshape2::melt(subsetted_final_data)
+  melted_data <- reshape2::melt(subsetted_final_data, id.vars = c("Cluster", "Representative_Term"))
+  melted_data$Cluster <- as.numeric(melted_data$Cluster)
+  melted_data <- melted_data[order(melted_data$Cluster), ] # order by cluster #
+  my_nticks <- length(unique(melted_data$Representative_Term)) # get # of clusters to show on y axis
   
   # plot the heatmap
   if (as_plotly == FALSE) {
@@ -249,15 +253,33 @@ comprehensive_hmap <- function(final_data, cluster_list, as_plotly=TRUE, value_t
       z = ~value,
       type = "heatmap",
       colors = c('red', 'green'),
-      text = ~value,
+      text = ~paste0("Cluster: ", Cluster, "<br>", value_type, ": ", value),
       colorbar = list(title = value_type),
       hoverinfo = "text"
     ) %>%
       layout (
         title = paste0(value_type, " by Cluster"),
         xaxis = list(title = 'Geneset'), 
-        yaxis = list(title = 'Representative Term for Cluster')
+        yaxis = list(title = 'Representative Term for Cluster', categoryorder = "trace", nticks = my_nticks)
       )
+    
+    # HEATMAPLY - Error with NA handling
+    
+    # heatmaply_data <- subsetted_final_data
+    # rownames(heatmaply_data) <- heatmaply_data$Representative_Term
+    # cols_to_remove <- c('Cluster', 'Representative_Term')
+    # heatmaply_data <- heatmaply_data[, !(names(heatmaply_data) %in% cols_to_remove)]
+    # 
+    # heatmaply_p <- heatmaply (
+    #   x = heatmaply_data,
+    #   colors = viridis(n=256, alpha = 1, begin = 0, end = 1, option = "viridis"),
+    #   hoverinfo = "text",
+    #   xlab = "Geneset",
+    #   ylab = "Representative Term for Cluster",
+    #   na.value = "grey50",
+    #   layout = list(title = paste0(value_type, " by Cluster"))
+    # )
+    
     return(plotly_p)
   }
 }
@@ -278,12 +300,17 @@ cluster_hmap <- function(cluster_list, term_vec, final_data, value_type="Padj", 
   
   # subset value_type columns
   value_cols <- grep(paste0("^", value_type), colnames(cluster_hmap), value=TRUE)
-  cluster_hmap <- cluster_hmap[, c("Term", value_cols)]
+  cluster_hmap <- cluster_hmap[, c("Cluster", "Term", value_cols)]
   # remove "Padj_" from colnames
   colnames(cluster_hmap) <- gsub(paste0("^", value_type, "_"), "", colnames(cluster_hmap))
   
   # melt the data for heatmap construction
-  melted_chmap_data <- reshape2::melt(cluster_hmap)
+  melted_chmap_data <- reshape2::melt(cluster_hmap, id.vars = c("Cluster", "Term"))
+  melted_chmap_data$Cluster <- as.numeric(melted_chmap_data$Cluster)
+  melted_chmap_data <- melted_chmap_data[order(melted_chmap_data$Cluster), ] # order by cluster #
+  
+  my_nticks <- length(unique(melted_chmap_data$Term)) # get # of terms to show on y axis
+  
   
   # plot the heatmap
   if (as_plotly == FALSE) {
@@ -303,15 +330,53 @@ cluster_hmap <- function(cluster_list, term_vec, final_data, value_type="Padj", 
       z = ~value,
       type = "heatmap",
       colors = c('red', 'green'),
-      text = ~value,
+      text = ~paste0("Cluster: ", Cluster, "<br>", value_type, ": ", value),  # Customize hover text
       colorbar = list(title = value_type),
       hoverinfo = "text"
     ) %>%
       layout (
         title = paste0(value_type, " by Term"),
         xaxis = list(title = 'Geneset'), 
-        yaxis = list(title = 'Term')
+        yaxis = list(title = 'Term', categoryorder = "trace", nticks = my_nticks)
       )
+    
+    # TEST plotly heatmap with subplots for each cluster
+    
+    # heatmap_plots <- list()
+    # unique_clusters <- unique(melted_chmap_data$Cluster)
+    # for (cluster in unique_clusters) {
+    #   subset_data <- melted_chmap_data[melted_chmap_data$Cluster == cluster, ]
+    #   subset_data <- subset_data[, c("Term", "variable", "value")]
+    #   p <- plot_ly( 
+    #     data = subset_data, 
+    #     x = ~variable, 
+    #     y = ~Term, 
+    #     z = ~value,
+    #     type = "heatmap", colors = c('red', 'green'),
+    #     text = ~value,
+    #     colorbar = list(title = value_type),
+    #     hoverinfo = "text"
+    #   ) %>%
+    #     layout (
+    #       title = list(title = 'Individual Term View'),
+    #       xaxis = list(title = 'Geneset'), 
+    #       yaxis = list(title = 'Term')
+    #       # annotations = list(
+    #       #   list(
+    #       #     text = paste("Cluster", cluster),
+    #       #     x = 0.5,
+    #       #     y = 1.1,
+    #       #     xref = "paper",
+    #       #     yref = "paper",
+    #       #     showarrow = FALSE
+    #       #   )
+    #       # )
+    #     )
+    #   heatmap_plots[[as.character(cluster)]] <- p
+    # }
+    # 
+    # subplotly_p <- subplot(heatmap_plots, nrows = length(unique_clusters), shareX = TRUE)
+    
     return(plotly_p)
   }
   
