@@ -14,7 +14,7 @@ uploadTabUI <- function(id) {
             br(),
             textAreaInput(ns('deg_text'), "Text Input", placeholder="Paste list of significant genes"),
             textInput(ns('textinput_name'), "Name", placeholder="Set name for pasted gene list"),
-            fileInput(ns('deg_files'), 'File Input', multiple=FALSE, accept=c('.csv', '.tsv', '.xls', '.txt')),
+            fileInput(ns('deg_files'), 'File Input', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
             helpText("Accepted formats: .csv, .tsv, .xls, .txt"),
             selectInput(ns('deg_sep'), "Element separator", c("Comma", "Space", "Tab", "Guess"), selected="Guess"),
             actionButton(ns('upload_deg_button'), "Upload")
@@ -22,7 +22,7 @@ uploadTabUI <- function(id) {
           # Rich Result upload panel
           tabPanel("Rich Result",
             br(),
-            fileInput(ns('rr_files'), 'File Input', multiple=FALSE, accept=c('.csv', '.tsv', '.xls', '.txt')),
+            fileInput(ns('rr_files'), 'File Input', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
             helpText("Accepted formats: .csv, .tsv, .xls, .txt"),
             selectInput(ns('rr_sep'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
             checkboxInput(ns('rr_rownames'), "First column contains rownames", value=FALSE),
@@ -61,13 +61,13 @@ uploadTabUI <- function(id) {
 }
 
 
-uploadTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
+uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs) {
   
   moduleServer(id, function(input, output, session) {
     
     # create reactive objs to make accessible in other modules
     u_degnames_reactive <- reactive(u_degnames$labels) 
-    u_degpaths_reactive <- reactive(reactiveValuesToList(u_degpaths)) 
+    u_degdfs_reactive <- reactive(u_degdfs) 
     u_rrnames_reactive <- reactive(u_rrnames$labels) 
     u_rrdfs_reactive <- reactive(u_rrdfs)
     
@@ -85,29 +85,29 @@ uploadTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
     observeEvent(input$upload_deg_button, {
       req(input$deg_files) # Make sure file uploaded
       
-      lab <- input$deg_files$name
-      dp <- input$deg_files$datapath
-      names(dp) <- lab
-      
-      u_degpaths(append(u_degpaths(), dp)) # set u_degpaths
-      u_degnames$labels <- c(u_degnames$labels, lab) # set u_degnames 
+      for (i in seq_along(input$deg_files$name)) {
+        lab <- input$deg_files$name[i]
+        
+        df <- read.delim(input$deg_files$datapath[i], header=TRUE, sep='\t') # read uploaded degfile
+        
+        u_degdfs[[lab]] <- df # set u_degdfs
+        u_degnames$labels <- c(u_degnames$labels, lab) # set u_degnames 
+      }
     })
     
     # when deg delete button clicked
     observeEvent(input$delete_degs, {
       req(input$selected_degs) # Make sure DEG selected
       
-      # remove selected files from u_degpaths and u_degnames 
-      u_degpaths <- setdiff(u_degpaths(), input$selected_degs)
+      # remove selected files from u_degdfs and u_degnames 
+      u_degdfs <- setdiff(names(u_degdfs), input$selected_degs)
       u_degnames$labels <- setdiff(u_degnames$labels, input$selected_degs)
     })
     
     # reactively update which deg table is read based on selection
     deg_to_table <- reactive ({
       req(input$deg_table_select)
-      df <- read.csv(u_degpaths()[[input$deg_table_select]], 
-                     header=TRUE,
-                     sep='\t')
+      df <- u_degdfs[[input$deg_table_select]]
       return(df)
     })
     
@@ -122,25 +122,28 @@ uploadTabServer <- function(id, u_degnames, u_degpaths, u_rrnames, u_rrdfs) {
     observeEvent(input$upload_rr_button, {
       req(input$rr_files) # Make sure file uploaded
       
-      lab <- input$rr_files$name
-      
-      # fix logic for csv files later
-      if (input$rr_sep == ",") {
-        if (input$rr_rownames == TRUE) {
-          df <- read.csv(input$rr_files$datapath, row.names=1)
+      for (i in seq_along(input$rr_files$name)) {
+        lab <- input$rr_files$name[i]
+        
+        # fix logic for csv files later
+        if (input$rr_sep == ",") {
+          if (input$rr_rownames == TRUE) {
+            df <- read.csv(input$rr_files$datapath[i], row.names=1)
+          } else {
+            df <- read.csv(input$rr_files$datapath[i])
+          }
         } else {
-          df <- read.csv(input$rr_files$datapath)
+          if (input$rr_rownames == TRUE) {
+            
+          } else {
+            df <- read.delim(input$rr_files$datapath[i], header=TRUE, sep='\t')
+          }
         }
-      } else {
-        if (input$rr_rownames == TRUE) {
-          
-        } else {
-          df <- read.delim(input$rr_files$datapath, header=TRUE, sep='\t')
-        }
+        
+        u_rrdfs[[lab]] <- df # set u_rrdfs
+        u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
       }
       
-      u_rrdfs[[lab]] <- df # set u_rrdfs
-      u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
     })
     
     # when rr delete button clicked
