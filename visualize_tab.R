@@ -62,14 +62,20 @@ visualizeTabServer <- function(id, u_clusnames, u_clusdfs, u_cluslists) {
       updateSelectInput(session=getDefaultReactiveDomain(), 'cluslist_select', choices=u_clusnames_reactive())
     })
     
+    # Update term_vec_reactive when cluster result selection changes
+    observeEvent(input$clusdf_select, {
+      req(input$clusdf_select)
+      
+      df <- u_clusdfs[[input$clusdf_select]]
+      term_vec_reactive(unique(df$Representative_Term))
+    })
+    
     # plot cluster result
     plot_clusdf_hmap <- reactive({
       req(input$clusdf_select)
       
       df <- u_clusdfs[[input$clusdf_select]]
       cluslist_df <- u_cluslists[[input$clusdf_select]]
-      
-      term_vec_reactive(df$Representative_Term) # create list of terms in heatmap
       
       hmap <- comprehensive_hmap(final_data=df, cluster_list=cluslist_df, as_plotly=input$big_plotly_view, 
                                  value_type=input$big_value_type, value_by=input$value_by)
