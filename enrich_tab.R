@@ -184,6 +184,16 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       u_clusnames$labels <- c(u_clusnames$labels, lab) # set u_clusnames
     })
     
+    # when cluster delete button clicked
+    observeEvent(input$delete_clus, {
+      req(input$selected_clus) # Make sure cluster result selected
+      
+      # remove selected files from u_clusdfs, u_cluslists, u_clusnames 
+      u_clusdfs <- setdiff(names(u_clusdfs), input$selected_clus)
+      u_cluslists <- setdiff(names(u_cluslists), input$selected_clus)
+      u_clusnames$labels <- setdiff(u_clusnames$labels, input$selected_clus)
+    })
+    
     # reactively update which cluster table is read based on selection
     clus_to_table <- reactive ({
       req(input$clus_table_select)

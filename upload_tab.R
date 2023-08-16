@@ -1,4 +1,6 @@
 library(shiny)
+library(tools)
+library(readxl)
 # add reset button
 # automatic column based on col name
 
@@ -15,17 +17,16 @@ uploadTabUI <- function(id) {
             textAreaInput(ns('deg_text'), "Text Input", placeholder="Paste list of significant genes"),
             textInput(ns('textinput_name'), "Name", placeholder="Set name for pasted gene list"),
             fileInput(ns('deg_files'), 'File Input', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
-            helpText("Accepted formats: .csv, .tsv, .xls, .txt"),
-            selectInput(ns('deg_sep'), "Element separator", c("Comma", "Space", "Tab", "Guess"), selected="Guess"),
+            helpText("Accepted formats: .txt, .csv, .tsv"),
+            selectInput(ns('deg_sep'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
             actionButton(ns('upload_deg_button'), "Upload")
           ),
           # Rich Result upload panel
           tabPanel("Rich Result",
             br(),
             fileInput(ns('rr_files'), 'File Input', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
-            helpText("Accepted formats: .csv, .tsv, .xls, .txt"),
+            helpText("Accepted formats: .txt, .csv, .tsv"),
             selectInput(ns('rr_sep'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
-            checkboxInput(ns('rr_rownames'), "First column contains rownames", value=FALSE),
             actionButton(ns('upload_rr_button'), "Upload")
           )
         )
@@ -87,7 +88,15 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs) {
       
       for (i in seq_along(input$deg_files$name)) {
         lab <- input$deg_files$name[i]
-        df <- read.delim(input$deg_files$datapath[i], header=TRUE, sep='\t') # read uploaded degfile
+        
+        # read file based on file extension
+        ext <- tools::file_ext(input$deg_files$name[i])
+        df <- switch(ext,
+          csv = read.csv(input$deg_files$datapath[i]),
+          tsv = read.delim(input$deg_files$datapath[i]),
+          txt = read.csv(input$deg_files$datapath[i], sep=input$deg_sep),
+          xls = readxl::read_excel(input$deg_files$datapath[i])
+        )
         
         u_degdfs[[lab]] <- df # set u_degdfs
         u_degnames$labels <- c(u_degnames$labels, lab) # set u_degnames 
@@ -125,20 +134,14 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs) {
       for (i in seq_along(input$rr_files$name)) {
         lab <- input$rr_files$name[i]
         
-        # fix logic for csv files later
-        if (input$rr_sep == ",") {
-          if (input$rr_rownames == TRUE) {
-            df <- read.csv(input$rr_files$datapath[i], row.names=1)
-          } else {
-            df <- read.csv(input$rr_files$datapath[i])
-          }
-        } else {
-          if (input$rr_rownames == TRUE) {
-            
-          } else {
-            df <- read.delim(input$rr_files$datapath[i], header=TRUE, sep='\t')
-          }
-        }
+        # read file based on file extension
+        ext <- tools::file_ext(input$rr_files$name[i])
+        df <- switch(ext,
+          csv = read.csv(input$rr_files$datapath[i]),
+          tsv = read.delim(input$rr_files$datapath[i]),
+          txt = read.csv(input$rr_files$datapath[i], sep=input$rr_sep),
+          xls = readxl::read_excel(input$rr_files$datapath[i])
+        )
         
         u_rrdfs[[lab]] <- df # set u_rrdfs
         u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
