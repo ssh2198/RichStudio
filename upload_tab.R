@@ -4,9 +4,9 @@ library(readxl)
 # add reset button
 # automatic column based on col name
 
-uploadTabUI <- function(id) {
+uploadTabUI <- function(id, tabName) {
   ns <- NS(id)
-  fluidPage(
+  tabItem(tabName = tabName,
     # UPLOAD TAB CONTENTS
     sidebarLayout(
       sidebarPanel(

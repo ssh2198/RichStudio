@@ -253,7 +253,7 @@ comprehensive_hmap <- function(final_data, cluster_list, as_plotly=TRUE, value_t
       z = ~value,
       type = "heatmap",
       colors = c('red', 'green'),
-      text = ~paste0("Cluster: ", Cluster, "<br>", value_type, ": ", value),
+      text = ~paste0("Cluster ", Cluster, "<br>", Representative_Term, "<br>", value_type, ": ", value),
       colorbar = list(title = value_type),
       hoverinfo = "text"
     ) %>%
@@ -330,7 +330,7 @@ cluster_hmap <- function(cluster_list, term_vec, final_data, value_type="Padj", 
       z = ~value,
       type = "heatmap",
       colors = c('red', 'green'),
-      text = ~paste0("Cluster: ", Cluster, "<br>", value_type, ": ", value),  # Customize hover text
+      text = ~paste0("Cluster ", Cluster, "<br>", Term, "<br>", value_type, ": ", value),  # Customize hover text
       colorbar = list(title = value_type),
       hoverinfo = "text"
     ) %>%

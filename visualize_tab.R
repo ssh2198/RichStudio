@@ -4,19 +4,19 @@ library(plotly)
 source('cluster_hmap_func.R')
 
 
-visualizeTabUI <- function(id) {
+visualizeTabUI <- function(id, tabName) {
   ns <- NS(id)
-  fluidPage(
+  tabItem(tabName = tabName,
     tabsetPanel(
       tabPanel("Heatmap",
-        wellPanel(
-          h4("Cluster Heatmap"),
+        br(),
+        box(title = "Cluster Heatmap", status = "primary", width = 12, collapsible = TRUE,
           p("Select cluster result to view comprehensive heatmap displaying values for each cluster"),
           selectInput(ns("clusdf_select"), "Select cluster result", choices=NULL, multiple=FALSE),
           checkboxInput(ns('big_plotly_view'), "View as plotly", value=TRUE),
           fluidRow(
             column(4,
-              selectInput(ns('big_value_type'), "Select value to show", choices=c("Pvalue", "Padj"))
+              selectInput(ns('big_value_type'), "Select value to show", choices=c("Padj", "Pvalue"))
             ),
             column(4,
               selectInput(ns('value_by'), "Calculate value by", choices=c("mean", "median", "min", "max"))
@@ -24,33 +24,40 @@ visualizeTabUI <- function(id) {
           )
         ),
         br(),
-        plotlyOutput(ns('clusdf_hmap')),
+        box(title = "Cluster Heatmap", status = "primary", width = 12,
+          solidHeader = TRUE,
+          plotlyOutput(ns('clusdf_hmap')),
+        ),
         br(),
-        wellPanel(
-          h4("Term Heatmap"),
+        box(title = "Term Heatmap", status = "primary", width = 12, collapsible = TRUE,
           p("Select individual clusters to view heatmap of values for each term in cluster"),
           selectInput(ns("indiv_clus_select"), "Select individual clusters", choices=NULL, multiple=TRUE),
           checkboxInput(ns('small_plotly_view'), "View as plotly", value=TRUE),
-          selectInput(ns('small_value_type'), "Select value to show", choices=c("Pvalue", "Padj"))
+          selectInput(ns('small_value_type'), "Select value to show", choices=c("Padj", "Pvalue"))
         ),
         br(),
-        plotlyOutput(ns('indiv_clus_hmap'))
+        box(title = "Term Heatmap", status = "primary", width = 12,
+          solidHeader = TRUE,
+          plotlyOutput(ns('indiv_clus_hmap'))
+        )
       ),
       tabPanel("Cluster Info",
-        h3("Detailed Cluster Info"),
-        p("View and export individual term data for cluster results"),
-        fluidRow(
-          column(4,
-            selectInput(ns("cluslist_select"), "Select cluster result", choices=NULL, multiple=FALSE),
-          ),
-          column(4,
-            selectInput(ns('cluslist_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
-          )
-        ),
-        DT::dataTableOutput(ns('cluslist_table')),
         br(),
-        downloadButton(ns("download_cluslist"), "Download"),
-        br()
+        box(title = "Detailed Cluster Info", status = "primary", width = 12,
+          solidHeader = TRUE,
+          p("View and export individual term data for cluster results"),
+          fluidRow(
+            column(4,
+              selectInput(ns("cluslist_select"), "Select cluster result", choices=NULL, multiple=FALSE),
+            ),
+            column(4,
+              selectInput(ns('cluslist_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
+            )
+          ),
+          DT::dataTableOutput(ns('cluslist_table')),
+          br(),
+          downloadButton(ns("download_cluslist"), "Download"),
+        )
       )
     )
   )

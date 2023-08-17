@@ -1,18 +1,20 @@
 library(shiny)
+library(shinydashboard)
 
 source('shiny_enrich.R')
 source('cluster_hmap_func.R')
 
 
-enrichTabUI <- function(id) {
+enrichTabUI <- function(id, tabName) {
   ns <- NS(id)
-  fluidPage(
+  tabItem(tabName = tabName,
     # ENRICH TAB CONTENTS
     sidebarLayout(
       sidebarPanel(
         tabsetPanel(
           tabPanel("Enrich",
             br(),
+            selectInput(ns('selected_degs'), "Select DEG sets to enrich", choices=NULL, multiple=TRUE),
             textInput(ns('header_input'), "Header", value="geneID"),
             selectInput(ns('anntype_select'), "Select annotation source", c("GO", "KEGG", "Reactome", "KEGGM")),
             selectInput(ns('keytype_select'), "Select keytype", 
@@ -27,6 +29,7 @@ enrichTabUI <- function(id) {
           ),
           tabPanel("Cluster",
             br(),
+            selectInput(ns('selected_rrs'), "Select rich results", choices=NULL, multiple=TRUE),
             textInput(ns('cluster_name'), "Name", value="Test group"),
             selectInput(ns('cluster_by'), "Cluster by", c("Mean Pvalue", "Median Pvalue", "Min Pvalue", "Mean Padj", "Median Padj", "Min Padj")),
             numericInput(ns('cutoff'), "Cutoff", value=.5, min=0, max=1),
@@ -42,29 +45,41 @@ enrichTabUI <- function(id) {
           # deg set view tab
           tabPanel("DEG Sets",
             br(),
-            selectInput(ns('selected_degs'), "Select DEG sets to enrich", choices=NULL, multiple=TRUE),
-            p('Enriched DEG sets will appear in "Rich Result" tab', style="color:grey"),
-            hr(),
-            h4("Table view/export"),
             fluidRow(
-              column(4,
-                selectInput(ns('deg_table_select'), "Select DEG set", choices=NULL),
+              column(6,
+                box(title = "Rename DEG sets", status = "primary", width = 12, collapsible = TRUE,
+                  selectInput(ns("rename_deg_select"), "Select DEG set", choices=NULL, multiple=FALSE),
+                  textInput(ns("new_deg_name"), "Name", placeholder="New name"),
+                  actionButton(ns("change_deg_name"), "Update name")
+                )
               ),
-              column(4,
-                selectInput(ns('deg_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
+              column(6,
+                box(title = "Remove DEG sets", status = "primary", width=12, collapsible = TRUE,
+                  selectInput(ns("remove_deg_select"), "Select DEG sets to remove", choices=NULL, multiple=TRUE),
+                  actionButton(ns("remove_deg"), "Remove selection")
+                )
               )
             ),
-            
-            DT::dataTableOutput(ns('deg_table')),
-            br(),
-            downloadButton(ns("download_deg"), "Download"),
-            br()
+            box(title = "Table view/export", status = "primary", width=12,
+              solidHeader = TRUE,
+              fluidRow(
+                column(4,
+                  selectInput(ns('deg_table_select'), "Select DEG set", choices=NULL),
+                ),
+                column(4,
+                  selectInput(ns('deg_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
+                )
+              ),
+              DT::dataTableOutput(ns('deg_table')),
+              br(),
+              downloadButton(ns("download_deg"), "Download"),
+              br()
+            )
           ),
           # rich result view tab
           tabPanel("Rich Results",
             br(),
             p("Enriched DEG sets and uploaded enrichment results will appear here", style="color:grey"),
-            selectInput(ns('selected_rrs'), "Select rich results", choices=NULL, multiple=TRUE),
             actionButton(ns('delete_rr'), "Delete selection"),
             hr(),
             h4("Table view/export"),
@@ -103,6 +118,11 @@ enrichTabUI <- function(id) {
           )
         )
       )
+    ),
+    tags$head(
+      tags$style(
+        HTML(".box-title { font-size: 20px; }")  # Adjust the font size as needed
+      )
     )
   )
 }
@@ -125,6 +145,8 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
     observe({
       updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=u_degnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'rename_deg_select', choices=u_degnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'remove_deg_select', choices=u_degnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'selected_rrs', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'rr_table_select', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'selected_clus', choices=u_clusnames_reactive())
@@ -151,6 +173,15 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       }
       print("Done enriching all DEG sets")
       
+    })
+    
+    # when deg delete button clicked
+    observeEvent(input$remove_deg, {
+      req(input$remove_deg_select) # Make sure DEG selected
+      
+      # remove selected files from u_rrdfs and u_rrnames 
+      u_degdfs <- setdiff(names(u_degdfs), input$remove_deg_select)
+      u_degnames$labels <- setdiff(u_degnames$labels, input$remove_deg_select)
     })
     
     # reactively update which deg table is read based on selection
