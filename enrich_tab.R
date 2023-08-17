@@ -50,7 +50,7 @@ enrichTabUI <- function(id, tabName) {
                 box(title = "Rename DEG sets", status = "primary", width = 12, collapsible = TRUE,
                   selectInput(ns("rename_deg_select"), "Select DEG set", choices=NULL, multiple=FALSE),
                   textInput(ns("new_deg_name"), "Name", placeholder="New name"),
-                  actionButton(ns("change_deg_name"), "Update name")
+                  actionButton(ns("rename_deg"), "Update name")
                 )
               ),
               column(6,
@@ -79,42 +79,70 @@ enrichTabUI <- function(id, tabName) {
           # rich result view tab
           tabPanel("Rich Results",
             br(),
-            p("Enriched DEG sets and uploaded enrichment results will appear here", style="color:grey"),
-            actionButton(ns('delete_rr'), "Delete selection"),
-            hr(),
-            h4("Table view/export"),
             fluidRow(
-              column(4,
-                selectInput(ns('rr_table_select'), "Select rich result", choices=NULL),
+              column(6,
+                box(title = "Rename rich results", status = "primary", width = 12, collapsible = TRUE,
+                  selectInput(ns("rename_rr_select"), "Select rich result", choices=NULL, multiple=FALSE),
+                  textInput(ns("new_rr_name"), "Name", placeholder="New name"),
+                  actionButton(ns("rename_rr"), "Update name")
+                )
               ),
-              column(4,
-                selectInput(ns('rr_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
+              column(6,
+                box(title = "Remove rich results", status = "primary", width=12, collapsible = TRUE,
+                  selectInput(ns("remove_rr_select"), "Select rich results to remove", choices=NULL, multiple=TRUE),
+                  actionButton(ns("remove_rr"), "Remove selection")
+                )
               )
             ),
-            DT::dataTableOutput(ns('rr_table')),
-            br(),
-            downloadButton(ns("download_rr"), "Download"),
-            br()
+            box(title = "Table view/export", status = "primary", width=12,
+              solidHeader = TRUE,
+              fluidRow(
+                column(4,
+                  selectInput(ns('rr_table_select'), "Select rich result", choices=NULL),
+                ),
+                column(4,
+                  selectInput(ns('rr_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
+                )
+              ),
+              DT::dataTableOutput(ns('rr_table')),
+              br(),
+              downloadButton(ns("download_rr"), "Download"),
+              br()
+            )
           ),
+          # cluster result view tab
           tabPanel("Cluster Result",
             br(),
-            p("Clustered enrichment results will appear here", style="color:grey"),
-            selectInput(ns('selected_clus'), "Select cluster results", choices=NULL, multiple=TRUE),
-            actionButton(ns('delete_clus'), "Delete selection"),
-            hr(),
-            h4("Table view/export"),
             fluidRow(
-              column(4,
-                selectInput(ns('clus_table_select'), "Select cluster result", choices=NULL),
+              column(6,
+                box(title = "Rename cluster results", status = "primary", width = 12, collapsible = TRUE,
+                  selectInput(ns("rename_clus_select"), "Select cluster result", choices=NULL, multiple=FALSE),
+                  textInput(ns("new_clus_name"), "Name", placeholder="New name"),
+                  actionButton(ns("rename_clus"), "Update name")
+                )
               ),
-              column(4,
-                selectInput(ns('clus_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
+              column(6,
+                box(title = "Remove cluster results", status = "primary", width=12, collapsible = TRUE,
+                  selectInput(ns("remove_clus_select"), "Select cluster results to remove", choices=NULL, multiple=TRUE),
+                  actionButton(ns("remove_clus"), "Remove selection")
+                )
               )
             ),
-            DT::dataTableOutput(ns('clus_table')),
-            br(),
-            downloadButton(ns("download_clus"), "Download"),
-            br()
+            box(title = "Table view/export", status = "primary", width=12,
+              solidHeader = TRUE,
+              fluidRow(
+                column(4,
+                  selectInput(ns('clus_table_select'), "Select cluster result", choices=NULL),
+                ),
+                column(4,
+                  selectInput(ns('clus_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
+                )
+              ),
+              DT::dataTableOutput(ns('clus_table')),
+              br(),
+              downloadButton(ns("download_clus"), "Download"),
+              br()
+            )
           )
         )
       )
@@ -144,13 +172,20 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
     # update select inputs based on # file inputs
     observe({
       updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
-      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=u_degnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'rename_deg_select', choices=u_degnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'remove_deg_select', choices=u_degnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=u_degnames_reactive())
+      
       updateSelectInput(session=getDefaultReactiveDomain(), 'selected_rrs', choices=u_rrnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'rename_rr_select', choices=u_rrnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'remove_rr_select', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'rr_table_select', choices=u_rrnames_reactive())
+      
       updateSelectInput(session=getDefaultReactiveDomain(), 'selected_clus', choices=u_clusnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'rename_clus_select', choices=u_clusnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'remove_clus_select', choices=u_clusnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'clus_table_select', choices=u_clusnames_reactive())
+      
     })
     
     
@@ -175,7 +210,22 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       
     })
     
-    # when deg delete button clicked
+    # when rename deg button clicked
+    observeEvent(input$rename_deg, {
+      req(input$rename_deg_select)
+      req(input$new_deg_name)
+      
+      new_name <- input$new_deg_name
+      old_name <- input$rename_deg_select
+      
+      u_degnames$labels <- c(u_degnames$labels, new_name)
+      u_degnames$labels <- setdiff(u_degnames$labels, old_name) # remove old name
+      
+      u_degdfs[[new_name]] <- u_degdfs[[old_name]]
+      u_degdfs <- setdiff(names(u_degdfs), old_name)
+    })
+    
+    # when remove deg button clicked
     observeEvent(input$remove_deg, {
       req(input$remove_deg_select) # Make sure DEG selected
       
@@ -216,13 +266,28 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
     
     
     # <!----- RICH RESULT FILE MANAGEMENT -----!>
-    # when rr delete button clicked
-    observeEvent(input$delete_rrs, {
-      req(input$selected_rrs) # Make sure DEG selected
+    # when rename rr button clicked
+    observeEvent(input$rename_rr, {
+      req(input$rename_rr_select)
+      req(input$new_rr_name)
+      
+      new_name <- input$new_rr_name
+      old_name <- input$rename_rr_select
+      
+      u_rrnames$labels <- c(u_rrnames$labels, new_name)
+      u_rrnames$labels <- setdiff(u_rrnames$labels, old_name) # remove old name
+      
+      u_rrdfs[[new_name]] <- u_rrdfs[[old_name]]
+      u_rrdfs <- setdiff(names(u_rrdfs), old_name)
+    })
+    
+    # when remove rr button clicked
+    observeEvent(input$remove_rr, {
+      req(input$remove_rr_select) # Make sure DEG selected
       
       # remove selected files from u_rrdfs and u_rrnames 
-      u_rrdfs <- setdiff(names(u_rrdfs), input$selected_rrs)
-      u_rrnames$labels <- setdiff(u_rrnames$labels, input$selected_rrs)
+      u_rrdfs <- setdiff(names(u_rrdfs), input$remove_rr_select)
+      u_rrnames$labels <- setdiff(u_rrnames$labels, input$remove_rr_select)
     })
     
     # reactively update which rr table is read based on selection
@@ -285,14 +350,33 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       u_clusnames$labels <- c(u_clusnames$labels, lab) # set u_clusnames
     })
     
-    # when cluster delete button clicked
-    observeEvent(input$delete_clus, {
-      req(input$selected_clus) # Make sure cluster result selected
+    # when rename cluster result button clicked
+    observeEvent(input$rename_clus, {
+      req(input$rename_clus_select)
+      req(input$new_clus_name)
+      
+      new_name <- input$new_clus_name
+      old_name <- input$rename_clus_select
+      
+      # update clusnames
+      u_clusnames$labels <- c(u_clusnames$labels, new_name)
+      u_clusnames$labels <- setdiff(u_clusnames$labels, old_name) # remove old name
+      # update clusdfs
+      u_clusdfs[[new_name]] <- u_clusdfs[[old_name]]
+      u_clusdfs <- setdiff(names(u_clusdfs), old_name)
+      # update cluslists
+      u_cluslists[[new_name]] <- u_cluslists[[old_name]]
+      u_cluslists <- setdiff(names(u_cluslists), old_name)
+    })
+    
+    # when remove cluster result button clicked
+    observeEvent(input$remove_clus, {
+      req(input$remove_clus_select) # Make sure cluster result selected
       
       # remove selected files from u_clusdfs, u_cluslists, u_clusnames 
-      u_clusdfs <- setdiff(names(u_clusdfs), input$selected_clus)
-      u_cluslists <- setdiff(names(u_cluslists), input$selected_clus)
-      u_clusnames$labels <- setdiff(u_clusnames$labels, input$selected_clus)
+      u_clusdfs <- setdiff(names(u_clusdfs), input$remove_clus_select)
+      u_cluslists <- setdiff(names(u_cluslists), input$remove_clus_select)
+      u_clusnames$labels <- setdiff(u_clusnames$labels, input$remove_clus_select)
     })
     
     # reactively update which cluster table is read based on selection
