@@ -37,34 +37,69 @@ enrichTabUI <- function(id) {
         )
       ),
       mainPanel(
-        h3("Uploaded Files"),
+        h3("File View"),
         tabsetPanel(
-          tabPanel("DEG",
+          # deg set view tab
+          tabPanel("DEG Sets",
             br(),
-            selectInput(ns('selected_degs'), "Select DEGs to enrich", choices=NULL, multiple=TRUE),
-            p('Enriched DEGs will appear in "Rich Result" tab', style="color:grey"),
+            selectInput(ns('selected_degs'), "Select DEG sets to enrich", choices=NULL, multiple=TRUE),
+            p('Enriched DEG sets will appear in "Rich Result" tab', style="color:grey"),
+            hr(),
+            h4("Table view/export"),
+            fluidRow(
+              column(4,
+                selectInput(ns('deg_table_select'), "Select DEG set", choices=NULL),
+              ),
+              column(4,
+                selectInput(ns('deg_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
+              )
+            ),
+            
+            DT::dataTableOutput(ns('deg_table')),
             br(),
-            selectInput(ns('deg_table_select'), "Select DEG to view", choices=NULL),
-            DT::dataTableOutput(ns('deg_table'))
+            downloadButton(ns("download_deg"), "Download"),
+            br()
           ),
-          tabPanel("Rich Result",
+          # rich result view tab
+          tabPanel("Rich Results",
             br(),
+            p("Enriched DEG sets and uploaded enrichment results will appear here", style="color:grey"),
             selectInput(ns('selected_rrs'), "Select rich results", choices=NULL, multiple=TRUE),
             actionButton(ns('delete_rr'), "Delete selection"),
+            hr(),
+            h4("Table view/export"),
+            fluidRow(
+              column(4,
+                selectInput(ns('rr_table_select'), "Select rich result", choices=NULL),
+              ),
+              column(4,
+                selectInput(ns('rr_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
+              )
+            ),
+            DT::dataTableOutput(ns('rr_table')),
             br(),
-            br(),
-            selectInput(ns('rr_table_select'), "Select rich result to view", choices=NULL),
-            DT::dataTableOutput(ns('rr_table'))
+            downloadButton(ns("download_rr"), "Download"),
+            br()
           ),
           tabPanel("Cluster Result",
             br(),
-            p("Clustered genesets will appear here", style="color:grey"),
+            p("Clustered enrichment results will appear here", style="color:grey"),
             selectInput(ns('selected_clus'), "Select cluster results", choices=NULL, multiple=TRUE),
             actionButton(ns('delete_clus'), "Delete selection"),
+            hr(),
+            h4("Table view/export"),
+            fluidRow(
+              column(4,
+                selectInput(ns('clus_table_select'), "Select cluster result", choices=NULL),
+              ),
+              column(4,
+                selectInput(ns('clus_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
+              )
+            ),
+            DT::dataTableOutput(ns('clus_table')),
             br(),
-            br(),
-            selectInput(ns('clus_table_select'), "Select cluster result to view", choices=NULL),
-            DT::dataTableOutput(ns('clus_table'))
+            downloadButton(ns("download_clus"), "Download"),
+            br()
           )
         )
       )
@@ -130,6 +165,24 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       deg_to_table()
     })
     
+    # download deg
+    output$download_deg <- downloadHandler(
+      filename = function() {
+        req(input$deg_table_select)
+        paste0(input$deg_table_select, input$deg_export_type)
+      },
+      content = function(file) {
+        ext_type <- input$deg_export_type
+        if (ext_type == ".txt") {
+          write.table(u_degdfs[[input$deg_table_select]], file, sep=' ', row.names=FALSE)
+        } else if (ext_type == ".csv") {
+          write.csv(u_degdfs[[input$deg_table_select]], file, row.names=FALSE)
+        } else if (ext_type == ".tsv") {
+          write.table(u_degdfs[[input$deg_table_select]], file, sep='\t', row.names=FALSE)
+        }
+      }
+    )
+    
     
     # <!----- RICH RESULT FILE MANAGEMENT -----!>
     # when rr delete button clicked
@@ -153,6 +206,23 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       rr_to_table()
     })
     
+    # download rr
+    output$download_rr <- downloadHandler(
+      filename = function() {
+        req(input$rr_table_select)
+        paste0(input$rr_table_select, input$rr_export_type)
+      },
+      content = function(file) {
+        ext_type <- input$rr_export_type
+        if (ext_type == ".txt") {
+          write.table(u_rrdfs[[input$rr_table_select]], file, sep=' ', row.names=FALSE)
+        } else if (ext_type == ".csv") {
+          write.csv(u_rrdfs[[input$rr_table_select]], file, row.names=FALSE)
+        } else if (ext_type == ".tsv") {
+          write.table(u_rrdfs[[input$rr_table_select]], file, sep='\t', row.names=FALSE)
+        }
+      }
+    )
     
     # <!----- CLUSTERING LOGIC -----!>
     # clustering
@@ -201,9 +271,27 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       return(df)
     })
     
-    # output rr table
+    # output cluster result table
     output$clus_table = DT::renderDataTable({
       clus_to_table()
     })
+    
+    # download cluster result
+    output$download_clus <- downloadHandler(
+      filename = function() {
+        req(input$clus_table_select)
+        paste0(input$clus_table_select, input$clus_export_type)
+      },
+      content = function(file) {
+        ext_type <- input$clus_export_type
+        if (ext_type == ".txt") {
+          write.table(u_clusdfs[[input$clus_table_select]], file, sep=' ', row.names=FALSE)
+        } else if (ext_type == ".csv") {
+          write.csv(u_clusdfs[[input$clus_table_select]], file, row.names=FALSE)
+        } else if (ext_type == ".tsv") {
+          write.table(u_clusdfs[[input$clus_table_select]], file, sep='\t', row.names=FALSE)
+        }
+      }
+    )
   })
 }

@@ -10,8 +10,9 @@ visualizeTabUI <- function(id) {
     tabsetPanel(
       tabPanel("Heatmap",
         wellPanel(
-          br(),
-          selectInput(ns("clusdf_select"), "View cluster result", choices=NULL, multiple=FALSE),
+          h4("Cluster Heatmap"),
+          p("Select cluster result to view comprehensive heatmap displaying values for each cluster"),
+          selectInput(ns("clusdf_select"), "Select cluster result", choices=NULL, multiple=FALSE),
           checkboxInput(ns('big_plotly_view'), "View as plotly", value=TRUE),
           fluidRow(
             column(4,
@@ -26,6 +27,8 @@ visualizeTabUI <- function(id) {
         plotlyOutput(ns('clusdf_hmap')),
         br(),
         wellPanel(
+          h4("Term Heatmap"),
+          p("Select individual clusters to view heatmap of values for each term in cluster"),
           selectInput(ns("indiv_clus_select"), "Select individual clusters", choices=NULL, multiple=TRUE),
           checkboxInput(ns('small_plotly_view'), "View as plotly", value=TRUE),
           selectInput(ns('small_value_type'), "Select value to show", choices=c("Pvalue", "Padj"))
@@ -34,10 +37,20 @@ visualizeTabUI <- function(id) {
         plotlyOutput(ns('indiv_clus_hmap'))
       ),
       tabPanel("Cluster Info",
+        h3("Detailed Cluster Info"),
+        p("View and export individual term data for cluster results"),
+        fluidRow(
+          column(4,
+            selectInput(ns("cluslist_select"), "Select cluster result", choices=NULL, multiple=FALSE),
+          ),
+          column(4,
+            selectInput(ns('cluslist_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
+          )
+        ),
+        DT::dataTableOutput(ns('cluslist_table')),
         br(),
-        selectInput(ns("cluslist_select"), "Select cluster result to view info", choices=NULL, multiple=FALSE),
-        br(),
-        DT::dataTableOutput(ns('cluslist_table'))
+        downloadButton(ns("download_cluslist"), "Download"),
+        br()
       )
     )
   )
@@ -112,6 +125,23 @@ visualizeTabServer <- function(id, u_clusnames, u_clusdfs, u_cluslists) {
       cluslist_to_table()
     })
     
+    # download cluslist table
+    output$download_cluslist <- downloadHandler(
+      filename = function() {
+        req(input$cluslist_select)
+        paste0(input$cluslist_select, input$cluslist_export_type)
+      },
+      content = function(file) {
+        ext_type <- input$cluslist_export_type
+        if (ext_type == ".txt") {
+          write.table(u_cluslists[[input$cluslist_select]], file, sep=' ', row.names=FALSE)
+        } else if (ext_type == ".csv") {
+          write.csv(u_cluslists[[input$cluslist_select]], file, row.names=FALSE)
+        } else if (ext_type == ".tsv") {
+          write.table(u_cluslists[[input$cluslist_select]], file, sep='\t', row.names=FALSE)
+        }
+      }
+    )
   })
   
 }

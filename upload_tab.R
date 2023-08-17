@@ -12,10 +12,11 @@ uploadTabUI <- function(id) {
       sidebarPanel(
         tabsetPanel(
           # DEG upload panel
-          tabPanel("DEG",
+          tabPanel("DEG Set",
             br(),
             textAreaInput(ns('deg_text'), "Text Input", placeholder="Paste list of significant genes"),
             textInput(ns('textinput_name'), "Name", placeholder="Set name for pasted gene list"),
+            hr(),
             fileInput(ns('deg_files'), 'File Input', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
             helpText("Accepted formats: .txt, .csv, .tsv"),
             selectInput(ns('deg_sep'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
@@ -33,20 +34,20 @@ uploadTabUI <- function(id) {
       ),
       mainPanel(
         # Uploaded File View
-        h3("Uploaded Files"),
+        h3("File View"),
         tabsetPanel(
           # View DEGs
-          tabPanel("DEG",
+          tabPanel("DEG Sets",
             br(),
-            selectInput(ns('selected_degs'), "Select DEGs", choices=NULL, multiple=TRUE),
-            actionButton(ns('delete_degs'), "Delete selected DEGS"),
+            selectInput(ns('selected_degs'), "Select DEG sets", choices=NULL, multiple=TRUE),
+            actionButton(ns('delete_degs'), "Delete selected DEG sets"),
             br(),
             br(),
-            selectInput(ns('deg_table_select'), "Select DEG to view", choices=NULL),
+            selectInput(ns('deg_table_select'), "Select DEG set to view", choices=NULL),
             DT::dataTableOutput(ns('deg_table'))
           ),
           # View rich results
-          tabPanel("Rich Result",
+          tabPanel("Rich Results",
             br(),
             selectInput(ns('selected_rrs'), "Select rich results", choices=NULL, multiple=TRUE),
             actionButton(ns('delete_rrs'), "Delete selected rich results"),

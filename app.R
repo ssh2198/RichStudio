@@ -38,6 +38,7 @@ source('shiny_enrich.R')
 source('upload_tab.R')
 source('enrich_tab.R')
 source('visualize_tab.R')
+source('export_tab.R')
 
 
 ui <- fluidPage(
@@ -51,7 +52,10 @@ ui <- fluidPage(
     ),
     tabPanel("Visualize",
       visualizeTabUI("visualize"),
-    )
+    ),
+    # tabPanel("Export",
+    #   exportTabUI("export"),
+    # )
   )
 )
 
@@ -73,7 +77,7 @@ server <- function(input, output) {
   enrichTabServer("enrich", u_degnames=u_degnames, u_degdfs=u_degdfs, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
   visualizeTabServer("visualize", u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
-  
+  # exportTabServer("export")
 }
 
 # Run the application 
