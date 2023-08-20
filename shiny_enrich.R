@@ -1,6 +1,6 @@
 library(devtools)
-install_github("hurlab/richR")
-install_github("guokai8/bioAnno")
+#install_github("guokai8/richR")
+#install_github("guokai8/bioAnno")
 
 library(richR)
 library(bioAnno)
@@ -14,17 +14,20 @@ fromAnnHub(species="human")  # from AnnotationHub
 
 # x: deg to analyze
 # header: name of vector in question
-shiny_enrich <- function(x, header, anntype, keytype, ontology) {
+shiny_enrich <- function(x, header, species, anntype, keytype, ontology) {
   x <- x[, header]
+  x <- as.character(x)
+  annot_data <- buildAnnot(species=species, keytype=keytype, anntype=anntype)
+  
   if (anntype == "GO") {
-    x <- as.character(x)
-    hsa_go <- buildAnnot(species="human", keytype=keytype, anntype=anntype)
-    return(richGO(x=x, godata=hsa_go, ontology="BP"))
-  } 
-  else if (anntype == "KEGG") {
-    hsa_ko <- buildAnnot(species="hsa", keytype=keytype, anntype=anntype)
-    return(richKEGG(x=x, kodata=hsa_ko))
+    return(richGO(x=x, godata=annot_data, ontology=ontology))
+  } else if (anntype == "KEGG") {
+    return(richKEGG(x=x, kodata=annot_data, ontology=ontology))
+  } else {
+    return(enrich(x=x, annot=annot_data))
   }
+  
 }
 
-# deg2_test <- shiny_enrich(deg2, 'geneID', "GO", "SYMBOL", "BP")
+# deg2_test <- shiny_enrich(deg2, 'geneID', 'mouse',  "GO", "SYMBOL", "BP")
+# no need to support david/msigdb at moment

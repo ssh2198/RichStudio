@@ -21,7 +21,7 @@ library(DT)
 library(heatmaply)
 library(devtools)
 
-#install_github("hurlab/richR")
+#install_github("guokai8/richR")
 library(richR)
 library(shinyHeatmaply)
 

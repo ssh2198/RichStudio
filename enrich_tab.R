@@ -24,7 +24,10 @@ enrichTabUI <- function(id, tabName) {
                           "ONTOLOGY", "ONTOLOGYALL", "PATH", "PMID", "REFSEQ", "SYMBOL",
                           "UNIGENE", "UNIPROT"), selected="SYMBOL"),
              selectInput(ns('ont_select'), "Select ontology", c("BP", "MF", "CC")),
-             selectInput(ns('species_select'), "Select species", c("Human", "Mouse", "Rat")),
+             selectInput(ns('species_select'), "Select species", c('anopheles', 'arabidopsis', 'bovine', 'celegans', 'canine', 'fly', 'zebrafish',
+                                                                   'ecoli', 'chicken', 'human', 'mouse', 'rhesus', 'malaria', 'chipm', 'rat',
+                                                                   'toxoplasma', 'sco', 'pig', 'yeast', 'xenopus'), selected='human'),
+            
              actionButton(ns('enrich_deg'), "Enrich")
           ),
           tabPanel("Cluster",
@@ -198,7 +201,7 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
         x <- u_degdfs[[input$selected_degs[i]]]
         
         # enrich
-        df <- shiny_enrich(x=x, header=as.character(input$header_input), 
+        df <- shiny_enrich(x=x, header=as.character(input$header_input), species=input$species_select,
                            anntype=as.character(input$anntype_select), keytype=as.character(input$keytype_select), ontology=as.character(input$ont_select))
         print(paste("Done enriching", input$selected_degs[i]))
         lab <- input$selected_degs[i]
