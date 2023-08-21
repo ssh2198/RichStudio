@@ -18,7 +18,6 @@ library(ggplot2)
 library(dplyr)
 library(plotly)
 library(DT)
-library(heatmaply)
 library(devtools)
 
 #install_github("guokai8/richR")
@@ -34,9 +33,11 @@ base_dir = dirname(current_path)
 output = "output/"
 
 # SOURCE RELATED SCRIPTS
-source('cluster_hmap_func.R')
-source('rr_makebar.R')
 source('shiny_enrich.R')
+source('rr_makebar.R')
+source('rr_cluster.R')
+source('make_heatmap.R')
+
 source('upload_tab.R')
 source('enrich_tab.R')
 source('cluster_tab.R')
@@ -72,9 +73,7 @@ ui <- dashboardPage(
       tags$link(
         rel = "stylesheet", type = "text/css", href = "custom.css"
       )
-      
     )
-    
   )
   
 )

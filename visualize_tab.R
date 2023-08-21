@@ -1,7 +1,8 @@
 library(shiny)
 library(plotly)
 
-source('cluster_hmap_func.R')
+source('rr_cluster.R')
+source('make_heatmap.R')
 
 
 visualizeTabUI <- function(id, tabName) {
@@ -13,7 +14,6 @@ visualizeTabUI <- function(id, tabName) {
         box(title = "Cluster Heatmap", status = "primary", width = 12, collapsible = TRUE,
           p("Select cluster result to view comprehensive heatmap displaying values for each cluster"),
           selectInput(ns("clusdf_select"), "Select cluster result", choices=NULL, multiple=FALSE),
-          checkboxInput(ns('big_plotly_view'), "View as plotly", value=TRUE),
           fluidRow(
             column(4,
               selectInput(ns('big_value_type'), "Select value to show", choices=c("Padj", "Pvalue"))
@@ -32,7 +32,6 @@ visualizeTabUI <- function(id, tabName) {
         box(title = "Term Heatmap", status = "primary", width = 12, collapsible = TRUE,
           p("Select individual clusters to view heatmap of values for each term in cluster"),
           selectInput(ns("indiv_clus_select"), "Select individual clusters", choices=NULL, multiple=TRUE),
-          checkboxInput(ns('small_plotly_view'), "View as plotly", value=TRUE),
           selectInput(ns('small_value_type'), "Select value to show", choices=c("Padj", "Pvalue"))
         ),
         br(),
@@ -97,7 +96,7 @@ visualizeTabServer <- function(id, u_clusnames, u_clusdfs, u_cluslists) {
       df <- u_clusdfs[[input$clusdf_select]]
       cluslist_df <- u_cluslists[[input$clusdf_select]]
       
-      hmap <- comprehensive_hmap(final_data=df, cluster_list=cluslist_df, as_plotly=input$big_plotly_view, 
+      hmap <- comprehensive_hmap(final_data=df, cluster_list=cluslist_df, 
                                  value_type=input$big_value_type, value_by=input$value_by)
       return(hmap)
     })
@@ -113,7 +112,7 @@ visualizeTabServer <- function(id, u_clusnames, u_clusdfs, u_cluslists) {
       cluslist_df <- u_cluslists[[input$clusdf_select]]
       
       hmap <- cluster_hmap(cluster_list=cluslist_df, term_vec=input$indiv_clus_select, 
-                           final_data=df, value_type=input$small_value_type, as_plotly=input$small_plotly_view)
+                           final_data=df, value_type=input$small_value_type)
       
       return(hmap)
     })
@@ -141,7 +140,7 @@ visualizeTabServer <- function(id, u_clusnames, u_clusdfs, u_cluslists) {
       content = function(file) {
         ext_type <- input$cluslist_export_type
         if (ext_type == ".txt") {
-          write.table(u_cluslists[[input$cluslist_select]], file, sep=' ', row.names=FALSE)
+          write.table(u_cluslists[[input$cluslist_select]], file, sep='\t', row.names=FALSE)
         } else if (ext_type == ".csv") {
           write.csv(u_cluslists[[input$cluslist_select]], file, row.names=FALSE)
         } else if (ext_type == ".tsv") {

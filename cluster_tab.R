@@ -2,7 +2,8 @@ library(shiny)
 library(shinydashboard)
 
 source('shiny_enrich.R')
-source('cluster_hmap_func.R')
+source('rr_cluster.R')
+source('make_heatmap.R')
 
 
 clusterTabUI <- function(id, tabName) {
@@ -257,7 +258,7 @@ clusterTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clu
       content = function(file) {
         ext_type <- input$deg_export_type
         if (ext_type == ".txt") {
-          write.table(u_degdfs[[input$deg_table_select]], file, sep=' ', row.names=FALSE)
+          write.table(u_degdfs[[input$deg_table_select]], file, sep='\t', row.names=FALSE)
         } else if (ext_type == ".csv") {
           write.csv(u_degdfs[[input$deg_table_select]], file, row.names=FALSE)
         } else if (ext_type == ".tsv") {
@@ -313,7 +314,7 @@ clusterTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clu
       content = function(file) {
         ext_type <- input$rr_export_type
         if (ext_type == ".txt") {
-          write.table(u_rrdfs[[input$rr_table_select]], file, sep=' ', row.names=FALSE)
+          write.table(u_rrdfs[[input$rr_table_select]], file, sep='\t', row.names=FALSE)
         } else if (ext_type == ".csv") {
           write.csv(u_rrdfs[[input$rr_table_select]], file, row.names=FALSE)
         } else if (ext_type == ".tsv") {
@@ -328,28 +329,31 @@ clusterTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clu
       req(input$selected_rrs) # Require rich result selection
       req(input$cluster_name) # Require cluster name
       
-      genesets <- list()
-      gs_names <- c()
-      for (i in seq_along(input$selected_rrs)) {
-        tmp <- input$selected_rrs[i]
-        genesets <- c(genesets, list(u_rrdfs[[tmp]]))
-      }
-      names(genesets) <- input$selected_rrs
-      gs_names <- names(genesets)
+      withProgress(message="Clustering...", value=0, {
+        genesets <- list()
+        gs_names <- c()
+        for (i in seq_along(input$selected_rrs)) {
+          tmp <- input$selected_rrs[i]
+          genesets <- c(genesets, list(u_rrdfs[[tmp]]))
+        }
+        names(genesets) <- input$selected_rrs
+        gs_names <- names(genesets)
+        
+        merged_gs <- merge_genesets(genesets)
+        incProgress(0.2, message=NULL, "Done merging")
+        clustered_gs <- cluster(merged_gs=merged_gs, cutoff=input$cutoff, overlap=input$overlap, minSize=input$min_size)
+        incProgress(0.5, message=NULL, "Done clustering")
+        cluster_list <- get_cluster_list(clustered_gs=clustered_gs, merged_gs=merged_gs, gs_names=gs_names) # get cluster info
+        final_data <- hmap_prepare(clustered_gs, gs_names=gs_names) # final data
+        final_data <- change_finaldata_valueby(final_data=final_data, cluster_list=cluster_list, value_by="mean")
+        
+        # store in reactive
+        lab <- input$cluster_name
+        u_clusdfs[[lab]] <- final_data # set u_clusdfs
+        u_cluslists[[lab]] <- cluster_list # set u_cluslists
+        u_clusnames$labels <- c(u_clusnames$labels, lab) # set u_clusnames
+      })
       
-      merged_gs <- merge_genesets(genesets)
-      print("done merge")
-      clustered_gs <- cluster(merged_gs=merged_gs, cutoff=input$cutoff, overlap=input$overlap, minSize=input$min_size)
-      print("done clustering")
-      cluster_list <- get_cluster_list(clustered_gs=clustered_gs, merged_gs=merged_gs, gs_names=gs_names) # get cluster info
-      final_data <- hmap_prepare(clustered_gs, gs_names=gs_names) # final data
-      final_data <- change_finaldata_valueby(final_data=final_data, cluster_list=cluster_list, value_by="mean")
-      
-      # store in reactive
-      lab <- input$cluster_name
-      u_clusdfs[[lab]] <- final_data # set u_clusdfs
-      u_cluslists[[lab]] <- cluster_list # set u_cluslists
-      u_clusnames$labels <- c(u_clusnames$labels, lab) # set u_clusnames
     })
     
     # when rename cluster result button clicked
@@ -402,7 +406,7 @@ clusterTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clu
       content = function(file) {
         ext_type <- input$clus_export_type
         if (ext_type == ".txt") {
-          write.table(u_clusdfs[[input$clus_table_select]], file, sep=' ', row.names=FALSE)
+          write.table(u_clusdfs[[input$clus_table_select]], file, sep='\t', row.names=FALSE)
         } else if (ext_type == ".csv") {
           write.csv(u_clusdfs[[input$clus_table_select]], file, row.names=FALSE)
         } else if (ext_type == ".tsv") {

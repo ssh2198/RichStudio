@@ -11,23 +11,23 @@ library(devtools)
 library(richR)
 
 #SET WORKING DIRECTORY
-getwd()
-library(rstudioapi) 
-current_path <- getActiveDocumentContext()$path 
-setwd(dirname(current_path))
-base_dir = dirname(current_path)
-output = "output/"
+# getwd()
+# library(rstudioapi) 
+# current_path <- getActiveDocumentContext()$path 
+# setwd(dirname(current_path))
+# base_dir = dirname(current_path)
+# output = "output/"
 
 
 
 # SAMPLE GENESETS
-gs1 <- read.delim("data/try-this/GO_HF12wk_vs_WT12wk.txt")
-gs2 <- read.delim("data/try-this/KEGG_HF36wk_vs_WT12wk.txt")
-gs3 <- read.delim("data/try-this/GO_WT36wk_vs_WT12wk.txt")
+# gs1 <- read.delim("data/try-this/GO_HF12wk_vs_WT12wk.txt")
+# gs2 <- read.delim("data/try-this/KEGG_HF36wk_vs_WT12wk.txt")
+# gs3 <- read.delim("data/try-this/GO_WT36wk_vs_WT12wk.txt")
 
-genesets <- list(gs1, gs2, gs3)
-names(genesets) <- c("GO_HF12wk_vs_WT12wk.txt", "KEGG_HF36wk_vs_WT12wk.txt", "GO_WT36wk_vs_WT12wk.txt")
-gs_names <- c("GO_HF12wk_vs_WT12wk.txt", "KEGG_HF36wk_vs_WT12wk.txt", "GO_WT36wk_vs_WT12wk.txt")
+# genesets <- list(gs1, gs2, gs3)
+# names(genesets) <- c("GO_HF12wk_vs_WT12wk.txt", "KEGG_HF36wk_vs_WT12wk.txt", "GO_WT36wk_vs_WT12wk.txt")
+# gs_names <- c("GO_HF12wk_vs_WT12wk.txt", "KEGG_HF36wk_vs_WT12wk.txt", "GO_WT36wk_vs_WT12wk.txt")
 
 # to test functionality of the functions, run:
 #genesets %>%

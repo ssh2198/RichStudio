@@ -247,7 +247,7 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       content = function(file) {
         ext_type <- input$deg_export_type
         if (ext_type == ".txt") {
-          write.table(u_degdfs[[input$deg_table_select]], file, sep=' ', row.names=FALSE)
+          write.table(u_degdfs[[input$deg_table_select]], file, sep='\t', row.names=FALSE)
         } else if (ext_type == ".csv") {
           write.csv(u_degdfs[[input$deg_table_select]], file, row.names=FALSE)
         } else if (ext_type == ".tsv") {
@@ -325,7 +325,7 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       content = function(file) {
         ext_type <- input$rr_export_type
         if (ext_type == ".txt") {
-          write.table(u_rrdfs[[input$rr_table_select]], file, sep=' ', row.names=FALSE)
+          write.table(u_rrdfs[[input$rr_table_select]], file, sep='\t', row.names=FALSE)
         } else if (ext_type == ".csv") {
           write.csv(u_rrdfs[[input$rr_table_select]], file, row.names=FALSE)
         } else if (ext_type == ".tsv") {
@@ -386,7 +386,7 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       content = function(file) {
         ext_type <- input$clus_export_type
         if (ext_type == ".txt") {
-          write.table(u_clusdfs[[input$clus_table_select]], file, sep=' ', row.names=FALSE)
+          write.table(u_clusdfs[[input$clus_table_select]], file, sep='\t', row.names=FALSE)
         } else if (ext_type == ".csv") {
           write.csv(u_clusdfs[[input$clus_table_select]], file, row.names=FALSE)
         } else if (ext_type == ".tsv") {

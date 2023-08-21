@@ -99,19 +99,23 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
     observeEvent(input$enrich_deg, {
       req(input$selected_degs)
       
-      for (i in seq_along(input$selected_degs)) {
-        x <- u_degdfs[[input$selected_degs[i]]]
+      withProgress(message="Enriching DEG sets...", value=0, {
         
-        # enrich
-        df <- shiny_enrich(x=x, header=as.character(input$header_input), species=input$species_select,
-                           anntype=as.character(input$anntype_select), keytype=as.character(input$keytype_select), ontology=as.character(input$ont_select))
-        print(paste("Done enriching", input$selected_degs[i]))
-        lab <- input$selected_degs[i]
+        for (i in seq_along(input$selected_degs)) {
+          x <- u_degdfs[[input$selected_degs[i]]]
+          
+          # enrich
+          df <- shiny_enrich(x=x, header=as.character(input$header_input), species=input$species_select,
+                             anntype=as.character(input$anntype_select), keytype=as.character(input$keytype_select), ontology=as.character(input$ont_select))
+          incProgress(1/length(input$selected_degs), message=NULL, detail=paste("Done enriching", input$selected_degs[i]))
+          lab <- input$selected_degs[i]
+          
+          u_rrdfs[[lab]] <- df@result # set u_rrdfs
+          u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
+        }
         
-        u_rrdfs[[lab]] <- df@result # set u_rrdfs
-        u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
-      }
-      print("Done enriching all DEG sets")
+      })
+      
     })
     
     get_rr_barplot <- reactive ({
