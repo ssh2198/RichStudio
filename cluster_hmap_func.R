@@ -7,8 +7,7 @@ library(plotly)
 library(heatmaply)
 
 library(devtools)
-install_github("hurlab/richR")
-
+#install_github("guokai8/richR")
 library(richR)
 
 #SET WORKING DIRECTORY

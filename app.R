@@ -38,6 +38,7 @@ source('cluster_hmap_func.R')
 source('shiny_enrich.R')
 source('upload_tab.R')
 source('enrich_tab.R')
+source('cluster_tab.R')
 source('visualize_tab.R')
 
 
@@ -48,6 +49,7 @@ ui <- dashboardPage(
     sidebarMenu(
       menuItem("Upload", tabName = "upload_tab"),
       menuItem("Enrich", tabName = "enrich_tab"),
+      menuItem("Cluster", tabName = "cluster_tab"),
       menuItem("Visualize", tabName = "visualize_tab")
     )
   ),
@@ -56,6 +58,7 @@ ui <- dashboardPage(
     tabItems(
       uploadTabUI("upload", tabName="upload_tab"),
       enrichTabUI("enrich", tabName="enrich_tab"),
+      clusterTabUI("cluster", tabName="cluster_tab"),
       visualizeTabUI("visualize", tabName="visualize_tab")
     ),
     tags$head(
@@ -89,9 +92,14 @@ server <- function(input, output) {
   
   # SERVER LOGIC
   uploadTabServer("upload", u_degnames=u_degnames, u_degdfs=u_degdfs, 
-                  u_rrnames=u_rrnames, u_rrdfs=u_rrdfs)
+                  u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
+                  u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
   enrichTabServer("enrich", u_degnames=u_degnames, u_degdfs=u_degdfs, 
-                  u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
+                  u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
+                  u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
+  clusterTabServer("cluster", u_degnames=u_degnames, u_degdfs=u_degdfs, 
+                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
+                   u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
   visualizeTabServer("visualize", u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
 }
 
