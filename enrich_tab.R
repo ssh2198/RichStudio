@@ -34,7 +34,14 @@ enrichTabUI <- function(id, tabName) {
         h3("Enrichment Result Visualization"),
         tabsetPanel(
           tabPanel("Table",
-          
+            br(),
+            box(title="Table View", width=12, status='primary', collapsible=TRUE,
+              br(),
+              selectInput(ns('select_table'), "Select enrichment result to view", choices=NULL, multiple=FALSE),
+            ),
+            box(title='Table View', width=12, status='primary', solidHeader=TRUE,
+              DT::dataTableOutput(ns('rr_table'))
+            )
           ),
           tabPanel("Bar Plot",
             br(),
@@ -91,6 +98,7 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
     observe({
       updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'select_bar', choices=u_rrnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'select_table', choices=u_rrnames_reactive())
     })
     
     
@@ -126,6 +134,15 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
     })
     output$barplot <- renderPlotly({
       get_rr_barplot()
+    })
+    
+    get_rr_table <- reactive ({
+      req(input$select_table)
+      df <- u_rrdfs[[input$select_table]]
+      return(df)
+    })
+    output$rr_table <- DT::renderDataTable({
+      get_rr_table()
     })
     
   })

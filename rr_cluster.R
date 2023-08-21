@@ -21,7 +21,7 @@ library(richR)
 
 
 # SAMPLE GENESETS
-# gs1 <- read.delim("data/try-this/GO_HF12wk_vs_WT12wk.txt")
+# testread <- read.csv("data/try-this/GO_HF12wk_vs_WT12wk.txt")
 # gs2 <- read.delim("data/try-this/KEGG_HF36wk_vs_WT12wk.txt")
 # gs3 <- read.delim("data/try-this/GO_WT36wk_vs_WT12wk.txt")
 

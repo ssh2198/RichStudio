@@ -1,6 +1,7 @@
 library(shiny)
 library(tools)
 library(readxl)
+library(readr)
 # add reset button
 # automatic column based on col name
 
@@ -190,12 +191,23 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
         
         # read file based on file extension
         ext <- tools::file_ext(input$deg_files$name[i])
-        df <- switch(ext,
-          csv = read.csv(input$deg_files$datapath[i]),
-          tsv = read.delim(input$deg_files$datapath[i]),
-          txt = read.csv(input$deg_files$datapath[i], sep=input$deg_sep),
-          xls = readxl::read_excel(input$deg_files$datapath[i])
-        )
+        if (ext != "txt") {
+          df <- switch(ext,
+            csv = read.csv(input$deg_files$datapath[i]),
+            tsv = read.delim(input$deg_files$datapath[i]),
+            xls = readxl::read_excel(input$deg_files$datapath[i])
+          )
+        } else if (ext == "txt" && input$deg_sep != "Guess") {
+          df <- read.csv(input$deg_files$datapath[i], sep=input$deg_sep)
+        } else if (ext == "txt" && input$deg_sep == "Guess") {
+          csv_df <- read.csv(input$deg_files$datapath[i])
+          tsv_df <- read.delim(input$deg_files$datapath[i])
+          if (ncol(csv_df) > ncol(tsv_df)) {
+            df <- csv_df
+          } else {
+            df <- tsv_df
+          }
+        }
         
         u_degdfs[[lab]] <- df # set u_degdfs
         u_degnames$labels <- c(u_degnames$labels, lab) # set u_degnames 
@@ -267,12 +279,36 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
         
         # read file based on file extension
         ext <- tools::file_ext(input$rr_files$name[i])
-        df <- switch(ext,
-          csv = read.csv(input$rr_files$datapath[i]),
-          tsv = read.delim(input$rr_files$datapath[i]),
-          txt = read.csv(input$rr_files$datapath[i], sep=input$rr_sep),
-          xls = readxl::read_excel(input$rr_files$datapath[i])
-        )
+        
+        if (ext != "txt") {
+          df <- switch(ext,
+            csv = read.csv(input$rr_files$datapath[i]),
+            tsv = read.delim(input$rr_files$datapath[i]),
+            xls = readxl::read_excel(input$rr_files$datapath[i])
+          )
+        } else if (ext == "txt" && input$rr_sep != "Guess") {
+          df <- read.csv(input$rr_files$datapath[i], sep=input$rr_sep)
+        } 
+        else if (ext == "txt" && input$rr_sep == "Guess") {
+          # try to read file as csv
+          tryCatch({
+            csv_df <- read.csv(input$rr_files$datapath[i])
+          }, error = function(err) {
+            csv_df <- NULL
+          })
+          # try to read file as tsv
+          tryCatch({
+            tsv_df <- read.delim(input$rr_files$datapath[i])
+          }, error = function(err) {
+            tsv_df <- NULL
+          })
+          
+          if (ncol(csv_df) > ncol(tsv_df) || is.null(tsv_df)) {
+            df <- csv_df
+          } else {
+            df <- tsv_df
+          }
+        }
         
         u_rrdfs[[lab]] <- df # set u_rrdfs
         u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
