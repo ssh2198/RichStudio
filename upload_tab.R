@@ -302,7 +302,7 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
           }, error = function(err) {
             tsv_df <- NULL
           })
-          
+          # decide which df to store
           if (ncol(csv_df) > ncol(tsv_df) || is.null(tsv_df)) {
             df <- csv_df
           } else {

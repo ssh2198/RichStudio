@@ -87,22 +87,33 @@ visualizeTabServer <- function(id, u_clusnames, u_clusdfs, u_cluslists) {
       
       df <- u_clusdfs[[input$clusdf_select]]
       term_vec_reactive(unique(df$Representative_Term))
-    })
-    
-    # plot cluster result
-    plot_clusdf_hmap <- reactive({
-      req(input$clusdf_select)
       
       df <- u_clusdfs[[input$clusdf_select]]
       cluslist_df <- u_cluslists[[input$clusdf_select]]
       
       hmap <- comprehensive_hmap(final_data=df, cluster_list=cluslist_df, 
                                  value_type=input$big_value_type, value_by=input$value_by)
-      return(hmap)
+      
+      output$clusdf_hmap <- renderPlotly({
+        hmap
+      })
+      
     })
-    output$clusdf_hmap <- renderPlotly({
-      plot_clusdf_hmap()
-    })
+    
+    # # plot cluster result
+    # plot_clusdf_hmap <- reactive({
+    #   req(input$clusdf_select)
+    #   
+    #   df <- u_clusdfs[[input$clusdf_select]]
+    #   cluslist_df <- u_cluslists[[input$clusdf_select]]
+    #   
+    #   hmap <- comprehensive_hmap(final_data=df, cluster_list=cluslist_df, 
+    #                              value_type=input$big_value_type, value_by=input$value_by)
+    #   return(hmap)
+    # })
+    # output$clusdf_hmap <- renderPlotly({
+    #   plot_clusdf_hmap()
+    # })
     
     # plot indiv cluster hmap
     plot_cluslist_hmap <- reactive({

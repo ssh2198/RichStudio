@@ -3,7 +3,11 @@ library(plotly)
 
 # example
 # x <- read.delim("data/try-this/GO_HF12wk_vs_WT12wk.txt")
-# testdot <- ggdot(x, top=25)
+# y <- read.delim("data/try-this/GO_WT36wk_vs_WT12wk.txt")
+# xylist <- list(x, y)
+
+# testnetmap <- ggnetwork(x, gene=x$GeneID)
+# ggtestnetmap <- ggplotly(testnetmap)
 
 # x: rich result dataframe
 rr_bar <- function(x, top=25, pvalue=0.05, value_type="Padj", view="rich") {

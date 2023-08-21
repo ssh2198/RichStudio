@@ -33,7 +33,7 @@ base_dir = dirname(current_path)
 output = "output/"
 
 # SOURCE RELATED SCRIPTS
-source('shiny_enrich.R')
+source('deg_enrich.R')
 source('rr_makebar.R')
 source('rr_cluster.R')
 source('make_heatmap.R')

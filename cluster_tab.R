@@ -1,7 +1,7 @@
 library(shiny)
 library(shinydashboard)
 
-source('shiny_enrich.R')
+source('deg_enrich.R')
 source('rr_cluster.R')
 source('make_heatmap.R')
 
