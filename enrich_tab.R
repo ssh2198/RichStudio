@@ -2,7 +2,7 @@ library(shiny)
 library(shinydashboard)
 
 source('shiny_enrich.R')
-source('cluster_hmap_func.R')
+source('rr_makebar.R')
 
 
 enrichTabUI <- function(id, tabName) {
@@ -37,7 +37,27 @@ enrichTabUI <- function(id, tabName) {
           
           ),
           tabPanel("Bar Plot",
-          
+            br(),
+            box(title="Bar Plot", width=12, status='primary', collapsible=TRUE,
+              br(),
+              selectInput(ns('select_bar'), "Select enrichment result to view", choices=NULL, multiple=FALSE),
+              fluidRow(
+                column(4,
+                  selectInput(ns('bar_type'), "View rich score or p-value?", choices=c("Rich score"="rich", "P-value"="value"), multiple=FALSE)
+                ),
+                column(4,
+                  selectInput(ns('bar_valtype'), "View Padj or Pvalue?", choices=c("Padj", "Pvalue"), multiple=FALSE)
+                ),
+                column(4,
+                  numericInput(ns("bar_pvalue"), "P-value cutoff", value=0.05, min=0, max=1)
+                )
+              ),
+              sliderInput(ns("bar_nterms"), "Number of terms to display", value=25, min=0, max=100)
+            ),
+            box(title='Bar Plot', width=12, status='primary', solidHeader=TRUE,
+              br(),
+              plotlyOutput(ns("barplot"))
+            )
           ),
           tabPanel("Dot Plot",
             
@@ -70,7 +90,7 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
     # update select inputs based on # file inputs
     observe({
       updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
-      
+      updateSelectInput(session=getDefaultReactiveDomain(), 'select_bar', choices=u_rrnames_reactive())
     })
     
     
@@ -92,6 +112,16 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
         u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
       }
       print("Done enriching all DEG sets")
+    })
+    
+    get_rr_barplot <- reactive ({
+      req(input$select_bar)
+      df <- u_rrdfs[[input$select_bar]]
+      mybar <- rr_bar(x=df, top=input$bar_nterms, pvalue=input$bar_pvalue, value_type=input$bar_valtype, view=input$bar_type)
+      return(mybar)
+    })
+    output$barplot <- renderPlotly({
+      get_rr_barplot()
     })
     
   })

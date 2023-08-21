@@ -30,7 +30,7 @@ rr_bar <- function(x, top=25, pvalue=0.05, value_type="Padj", view="rich") {
   
   # view rich score
   if (view == "rich") {
-    plotly_p <- plot_ly(
+    p <- plot_ly(
       data = x, 
       x = ~rich,
       y = ~Term,
@@ -40,13 +40,13 @@ rr_bar <- function(x, top=25, pvalue=0.05, value_type="Padj", view="rich") {
     ) %>%
       layout(
         title = "Rich Score for Enriched Terms",
-        xaxis = list(title = "Term"),
-        yaxis = list(title = "Rich Score")
+        xaxis = list(title = "Rich Score"),
+        yaxis = list(title = "Term", categoryorder = "trace", nticks = top)
       )
   } 
   # view -log10(value_type)
   else if (view == "value") {
-    plotly_p <- plot_ly(
+    p <- plot_ly(
       data = x, 
       x = ~final_value,
       y = ~Term,
@@ -56,9 +56,9 @@ rr_bar <- function(x, top=25, pvalue=0.05, value_type="Padj", view="rich") {
       layout(
         title = paste0("-log10(", value_type, ") for Enriched Terms"),
         xaxis = list(title = paste0("-log10(", value_type, ")")),
-        yaxis = list(title = "Term")
+        yaxis = list(title = "Term", categoryorder = "trace", nticks = top)
       )
   }
-  
+  return(p)
   
 }

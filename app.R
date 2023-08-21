@@ -35,6 +35,7 @@ output = "output/"
 
 # SOURCE RELATED SCRIPTS
 source('cluster_hmap_func.R')
+source('rr_makebar.R')
 source('shiny_enrich.R')
 source('upload_tab.R')
 source('enrich_tab.R')
