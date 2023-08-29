@@ -189,23 +189,40 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       for (i in seq_along(input$deg_files$name)) {
         lab <- input$deg_files$name[i]
         
-        # read file based on file extension
         ext <- tools::file_ext(input$deg_files$name[i])
+        path <- input$deg_files$datapath[i]
+        
+        # read file based on file extension
         if (ext != "txt") {
           df <- switch(ext,
-            csv = read.csv(input$deg_files$datapath[i]),
-            tsv = read.delim(input$deg_files$datapath[i]),
-            xls = readxl::read_excel(input$deg_files$datapath[i])
+            csv = read.csv(path),
+            tsv = read.delim(path),
+            xls = readxl::read_excel(path)
           )
         } else if (ext == "txt" && input$deg_sep != "Guess") {
-          df <- read.csv(input$deg_files$datapath[i], sep=input$deg_sep)
-        } else if (ext == "txt" && input$deg_sep == "Guess") {
-          csv_df <- read.csv(input$deg_files$datapath[i])
-          tsv_df <- read.delim(input$deg_files$datapath[i])
-          if (ncol(csv_df) > ncol(tsv_df)) {
-            df <- csv_df
+          df <- read.csv(path, sep=input$deg_sep)
+        } 
+        # GUESS separator logic
+        else if (ext == "txt" && input$deg_sep == "Guess") {
+          # try to read file as csv
+          csv_ncol <- tryCatch({
+            csvdf <- read.csv(path)
+            ncol(csvdf)
+          }, error = function(err) {
+            0
+          })
+          # try to read file as tsv
+          tsv_ncol <- tryCatch({
+            tsvdf <- read.delim(path)
+            ncol(tsvdf)
+          }, error = function(err) {
+            0
+          })
+          # decide which df to store
+          if (tsv_ncol == 0 || csv_ncol > tsv_ncol) {
+            df <- read.csv(path)
           } else {
-            df <- tsv_df
+            df <- read.delim(path)
           }
         }
         
@@ -277,36 +294,39 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       for (i in seq_along(input$rr_files$name)) {
         lab <- input$rr_files$name[i]
         
-        # read file based on file extension
         ext <- tools::file_ext(input$rr_files$name[i])
+        path <- input$rr_files$datapath[i]
         
+        # read file based on file extension
         if (ext != "txt") {
           df <- switch(ext,
-            csv = read.csv(input$rr_files$datapath[i]),
-            tsv = read.delim(input$rr_files$datapath[i]),
-            xls = readxl::read_excel(input$rr_files$datapath[i])
+            csv = read.csv(path),
+            tsv = read.delim(path),
+            xls = readxl::read_excel(path)
           )
         } else if (ext == "txt" && input$rr_sep != "Guess") {
-          df <- read.csv(input$rr_files$datapath[i], sep=input$rr_sep)
+          df <- read.csv(path, sep=input$rr_sep)
         } 
         else if (ext == "txt" && input$rr_sep == "Guess") {
           # try to read file as csv
-          tryCatch({
-            csv_df <- read.csv(input$rr_files$datapath[i])
+          csv_ncol <- tryCatch({
+            csvdf <- read.csv(path)
+            ncol(csvdf)
           }, error = function(err) {
-            csv_df <- NULL
+            0
           })
           # try to read file as tsv
-          tryCatch({
-            tsv_df <- read.delim(input$rr_files$datapath[i])
+          tsv_ncol <- tryCatch({
+            tsvdf <- read.delim(path)
+            ncol(tsvdf)
           }, error = function(err) {
-            tsv_df <- NULL
+            0
           })
           # decide which df to store
-          if (ncol(csv_df) > ncol(tsv_df) || is.null(tsv_df)) {
-            df <- csv_df
+          if (tsv_ncol == 0 || csv_ncol > tsv_ncol) {
+            df <- read.csv(path)
           } else {
-            df <- tsv_df
+            df <- read.delim(path)
           }
         }
         

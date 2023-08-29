@@ -341,19 +341,26 @@ clusterTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clu
         
         merged_gs <- merge_genesets(genesets)
         incProgress(0.2, message=NULL, "Done merging")
-        clustered_gs <- cluster(merged_gs=merged_gs, cutoff=input$cutoff, overlap=input$overlap, minSize=input$min_size)
-        incProgress(0.5, message=NULL, "Done clustering")
-        cluster_list <- get_cluster_list(clustered_gs=clustered_gs, merged_gs=merged_gs, gs_names=gs_names) # get cluster info
-        final_data <- hmap_prepare(clustered_gs, gs_names=gs_names) # final data
-        final_data <- change_finaldata_valueby(final_data=final_data, cluster_list=cluster_list, value_by="mean")
-        
-        # store in reactive
-        lab <- input$cluster_name
-        u_clusdfs[[lab]] <- final_data # set u_clusdfs
-        u_cluslists[[lab]] <- cluster_list # set u_cluslists
-        u_clusnames$labels <- c(u_clusnames$labels, lab) # set u_clusnames
+        clustered_gs <- tryCatch(
+          cluster(merged_gs=merged_gs, cutoff=input$cutoff, overlap=input$overlap, minSize=input$min_size),
+          error = function(e) {
+            showNotification(e$message)
+            return(NULL)
+          }
+        )
+        if(!is.null(clustered_gs)) {
+          incProgress(0.5, message=NULL, "Done clustering")
+          cluster_list <- get_cluster_list(clustered_gs=clustered_gs, merged_gs=merged_gs, gs_names=gs_names) # get cluster info
+          final_data <- hmap_prepare(clustered_gs, gs_names=gs_names) # final data
+          final_data <- change_finaldata_valueby(final_data=final_data, cluster_list=cluster_list, value_by="mean")
+          
+          # store in reactive
+          lab <- input$cluster_name
+          u_clusdfs[[lab]] <- final_data # set u_clusdfs
+          u_cluslists[[lab]] <- cluster_list # set u_cluslists
+          u_clusnames$labels <- c(u_clusnames$labels, lab) # set u_clusnames
+        }
       })
-      
     })
     
     # when rename cluster result button clicked
