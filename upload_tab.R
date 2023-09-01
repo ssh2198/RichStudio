@@ -307,6 +307,7 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
         } else if (ext == "txt" && input$rr_sep != "Guess") {
           df <- read.csv(path, sep=input$rr_sep)
         } 
+        # GUESS separator logic
         else if (ext == "txt" && input$rr_sep == "Guess") {
           # try to read file as csv
           csv_ncol <- tryCatch({
