@@ -9,7 +9,7 @@ visualizeTabUI <- function(id, tabName) {
   ns <- NS(id)
   tabItem(tabName = tabName,
     tabsetPanel(
-      tabPanel("Heatmap",
+      tabPanel("Cluster Result Heatmap",
         br(),
         box(title = "Cluster Heatmap", status = "primary", width = 12, collapsible = TRUE,
           p("Select cluster result to view comprehensive heatmap displaying values for each cluster"),
@@ -38,6 +38,44 @@ visualizeTabUI <- function(id, tabName) {
         box(title = "Term Heatmap", status = "primary", width = 12,
           solidHeader = TRUE,
           plotlyOutput(ns('indiv_clus_hmap'))
+        )
+      ),
+      tabPanel("Enrichment Result Heatmap",
+        br(),
+        tabBox(title = "Edit Heatmap", id="edit_hmap_box", width = 12,
+          tabPanel("Add",
+            selectInput(ns("rr_add_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
+            fluidRow(
+              column(4,
+                numericInput(ns('top_rr_terms'), "Select top ? terms", value = 20, min=0, max=100)
+              ),
+              column(4,
+                selectInput(ns('rr_top_value_by'), "Select top terms by", choices=c("Padj", "Pvalue"))
+              )
+            ),
+            DT::dataTableOutput(ns('rr_select_table')),
+            actionButton(ns('add_rr'), "Add terms")
+          ),
+          tabPanel("Delete",
+            selectInput(ns("rr_delete_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
+            selectInput(ns("rr_term_delete_select"), "Select terms to delete", choices=NULL, multiple=TRUE),
+            fluidRow(
+              column(4,
+                actionButton(ns('delete_selected_rr_terms'), "Delete selected terms")
+              ),
+              column(4,
+                actionButton(ns('delete_all_rr_terms'), "Delete all terms")
+              ),
+              column(4,
+                actionButton(ns('delete_entire_rr'), "Delete entire result from heatmap")
+              ),
+            )
+          )
+        ),
+        br(),
+        box(title="Enrichment Result Heatmap", status="primary", width=12,
+          solidHeader = TRUE,
+          plotlyOutput(ns('rr_hmap')),
         )
       ),
       tabPanel("Cluster Info",

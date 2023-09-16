@@ -155,3 +155,85 @@ cluster_hmap <- function(cluster_list, term_vec, final_data, value_type="Padj") 
     return(p)
   
 }
+
+# CUSTOM TOP TERMS HEATMAP (no clustering req.)
+# add geneset to custom data
+gs_name <- "GO_HF12wk_vs_WT12wk.txt"
+gs <- head(gs1)
+
+term_vec <- c("Steroid biosynthesis", "Lysosome", "Toxoplasmosis", "Prion diseases")
+gs_name <- "KEGG_HF36wk_vs_WT12wk.txt"
+gs <- gs2
+add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
+  if (is.null(custom_data)) {
+    custom_data <- data.frame()
+  }
+  gs <- gs[which(term_vec %in% gs$Term), ]
+  
+  # append filename to all colnames except "Annot" and "Term"
+  exclude_cols <- c("Annot", "Term")
+  colnames(gs) <- ifelse(colnames(gs) %in% exclude_cols, colnames(gs), 
+                         paste(colnames(gs), gs_name, sep="_"))
+  
+  if (nrow(custom_data) == 0) {
+    custom_data <- gs
+  } else {
+    custom_data <- merge(custom_data, gs, by=c('Annot', 'Term'), all=TRUE)  
+  }
+  # define GeneID cols
+  geneid_cols <- c(grep(paste0("^", "GeneID", "_"), colnames(custom_data), value=TRUE))
+  custom_data$GeneID <- apply(custom_data[, geneid_cols], 1, function (x) paste(unique(c(x)), collapse=','))
+  # catch NA
+  custom_data$GeneID <- sapply(custom_data$GeneID, function(x) gsub('NA,', '', x))
+  # catch NA at the end
+  custom_data$GeneID <- sapply(custom_data$GeneID, function(x) gsub(',NA$', '', x, perl=TRUE))
+  
+  return(custom_data)
+}
+
+# remove geneset from custom data
+remove_gs <- function(custom_data, gs) {
+  
+}
+
+# remove terms
+remove_terms <- function(custom_data, term_vec) {
+  
+}
+
+# custom heatmap
+value_type <- "Padj"
+custom_hmap <- function(custom_data, value_type) {
+  
+  # grab either Pvalue or Padj
+  value_cols <- c(grep(paste0("^", value_type, "_"), colnames(custom_data), value=TRUE))
+  # subset new_final_data by value_type
+  subsetted_final_data <- custom_data[, c("Annot", "Term", "GeneID", value_cols)]
+  
+  # remove "Pvalue" or "Padj" from colnames
+  colnames(subsetted_final_data) <- gsub(paste0("^", value_type, "_"), "", colnames(subsetted_final_data))
+
+  melted_custom_data <- reshape2::melt(subsetted_final_data, id.vars = c("Term", "Annot", "GeneID"))
+  
+  my_nticks <- length(unique(melted_custom_data$Term))
+  
+  # plot the heatmap
+  p <- plot_ly (
+    data = melted_custom_data,
+    x = ~variable,
+    y = ~Term,
+    z = ~value,
+    type = "heatmap",
+    colors = c('red', 'green'),
+    text = ~paste0(Term, "<br>", "-log10(", value_type, "): ", value, "<br>"),  # Customize hover text
+    colorbar = list(title = paste0("-log10(", value_type, ")")),
+    hoverinfo = "text"
+  ) %>%
+    layout (
+      title = paste0("-log10(", value_type, ") by Term"),
+      xaxis = list(title = 'Geneset'), 
+      yaxis = list(title = 'Term', categoryorder = "trace", nticks = my_nticks)
+    )
+  return(p)
+  
+}
