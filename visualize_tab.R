@@ -61,14 +61,11 @@ visualizeTabUI <- function(id, tabName) {
             selectInput(ns("rr_term_delete_select"), "Select terms to delete", choices=NULL, multiple=TRUE),
             fluidRow(
               column(4,
-                actionButton(ns('delete_selected_rr_terms'), "Delete selected terms")
+                actionButton(ns('delete_rr_terms'), "Delete selected terms")
               ),
               column(4,
-                actionButton(ns('delete_all_rr_terms'), "Delete all terms")
-              ),
-              column(4,
-                actionButton(ns('delete_entire_rr'), "Delete entire result from heatmap")
-              ),
+                actionButton(ns('delete_rr'), "Delete entire result")
+              )
             )
           )
         ),
@@ -101,22 +98,35 @@ visualizeTabUI <- function(id, tabName) {
 }
 
 
-visualizeTabServer <- function(id, u_clusnames, u_clusdfs, u_cluslists) {
+visualizeTabServer <- function(id, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u_cluslists) {
   
   moduleServer(id, function(input, output, session) {
     
     # create reactive objs to make accessible in other modules
+    u_rrnames_reactive <- reactive(u_rrnames$labels) 
+    u_rrdfs_reactive <- reactive(u_rrdfs)
     u_clusnames_reactive <- reactive(u_clusnames$labels)
     u_clusdfs_reactive <- reactive(u_clusdfs)
     u_cluslists_reactive <- reactive(u_cluslists)
     
     term_vec_reactive <- reactiveVal(NULL)
     
+    rr_custom_list_reactive <- reactiveValues(labels=NULL)
+    rr_term_vec_reactive <- reactiveValues()
+    custom_data_reactive <- reactiveValues(df = data.frame())
+    
+    #custom_data <- data.frame()
+    # custom_data_reactive <- reactive({
+    #   data.frame()
+    # })
+    
     # update select inputs based on # cluster results
     observe({
       updateSelectInput(session=getDefaultReactiveDomain(), 'clusdf_select', choices=u_clusnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'indiv_clus_select', choices=term_vec_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'rr_add_select', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'cluslist_select', choices=u_clusnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'rr_delete_select', choices=rr_custom_list_reactive$labels)
     })
     
     # Update term_vec_reactive when cluster result selection changes
@@ -137,6 +147,13 @@ visualizeTabServer <- function(id, u_clusnames, u_clusdfs, u_cluslists) {
       })
       
     })
+    observeEvent(input$rr_delete_select, {
+      req(input$rr_delete_select)
+      if (!is.null(rr_term_vec_reactive)) {
+        tmp <- rr_term_vec_reactive[[input$rr_delete_select]]
+        updateSelectInput(session=getDefaultReactiveDomain(), 'rr_term_delete_select', choices=tmp)
+      }
+    })
     
     # # plot cluster result
     # plot_clusdf_hmap <- reactive({
@@ -152,6 +169,66 @@ visualizeTabServer <- function(id, u_clusnames, u_clusdfs, u_cluslists) {
     # output$clusdf_hmap <- renderPlotly({
     #   plot_clusdf_hmap()
     # })
+    
+    
+    # Enrichment Result Heatmap
+    # reactively update which rr table is read based on selection
+    rr_to_table <- reactive ({
+      req(input$rr_add_select)
+      df <- u_rrdfs[[input$rr_add_select]]
+      return(df)
+    })
+    # output rr table
+    output$rr_select_table = DT::renderDataTable(
+      rr_to_table()
+    )
+    
+    # add selected terms to heatmap
+    observeEvent(input$add_rr, {
+      req(input$rr_select_table_rows_selected)
+      
+      gs <- u_rrdfs[[input$rr_add_select]] # store df of selected rr
+      term_vec <- gs[input$rr_select_table_rows_selected, ] # subset df with selected rows
+      term_vec <- term_vec$Term # get only Term column of subsetted df
+      
+      # add gs to custom_data_reactive
+      custom_data_reactive$df <- add_gs(custom_data=custom_data_reactive$df, gs=gs, 
+                                     gs_name=input$rr_add_select, term_vec=term_vec)
+    
+      # add terms to rr_term_vec_reactive
+      rr_term_vec_reactive[[input$rr_add_select]] <- term_vec
+      # add gs name to rr_custom_list_reactive
+      rr_custom_list_reactive$labels <- c(rr_custom_list_reactive$labels, input$rr_add_select)
+    })
+    
+    # remove selected terms from heatmap
+    observeEvent(input$delete_rr_terms, {
+      req(input$rr_term_delete_select)
+      req(input$rr_delete_select)
+      custom_data_reactive$df <- remove_gs(custom_data_reactive$df, input$rr_delete_select, input$rr_term_delete_select)
+      
+      tmp <- rr_term_vec_reactive[[input$rr_delete_select]]
+      rr_term_vec_reactive[[input$rr_delete_select]] <- tmp[-which(tmp %in% input$rr_term_delete_select)]
+      updateSelectInput(session=getDefaultReactiveDomain(), 'rr_term_delete_select', 
+                        choices=rr_term_vec_reactive[[input$rr_delete_select]])
+    })
+    
+    # delete entire result from heatmap
+    observeEvent(input$delete_rr, {
+      req(input$rr_delete_select)
+      #custom_data_reactive$df <- remove_gs(custom_data_reactive$df, input$rr_delete_select, 
+                                           #input$rr_term_delete_select, rr_custom_list_reactive[[]])
+    })
+    
+    # plot enrichment result heatmap
+    plot_custom_hmap <- reactive({
+      req(nrow(custom_data_reactive$df) != 0)
+      hmap <- custom_hmap(custom_data=custom_data_reactive$df, value_type=input$rr_top_value_by)
+      return(hmap)
+    })
+    output$rr_hmap <- renderPlotly({
+      plot_custom_hmap()
+    })
     
     # plot indiv cluster hmap
     plot_cluslist_hmap <- reactive({

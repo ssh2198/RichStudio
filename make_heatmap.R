@@ -1,5 +1,6 @@
 library(tidyverse)
 library(plotly)
+library(dplyr)
 
 
 
@@ -156,16 +157,45 @@ cluster_hmap <- function(cluster_list, term_vec, final_data, value_type="Padj") 
   
 }
 
+append_df <- function(custom_data, gs) {
+  # Get the names of columns in each data frame
+  colnames_cd <- colnames(custom_data)
+  colnames_gs <- colnames(gs)
+  
+  print(colnames_cd)
+  print(colnames_gs)
+  
+  # Identify common and unique columns
+  common_cols <- intersect(colnames_cd, colnames_gs)
+  cd_only_cols <- setdiff(colnames_cd, colnames_gs)
+  
+  print(common_cols)
+  print(cd_only_cols)
+  
+  # Add missing columns to gs
+  gs[ , cd_only_cols] <- NA
+  
+  custom_data[colnames_cd]
+  gs[colnames_cd]
+  
+  # Combine the data frames by rows
+  combined_df <- rbind(custom_data, gs)
+  print(combined_df)
+  return(combined_df)
+}
+
 # CUSTOM TOP TERMS HEATMAP (no clustering req.)
 # add geneset to custom data
-gs_name <- "GO_HF12wk_vs_WT12wk.txt"
-gs <- head(gs1)
-
-term_vec <- c("Steroid biosynthesis", "Lysosome", "Toxoplasmosis", "Prion diseases")
-gs_name <- "KEGG_HF36wk_vs_WT12wk.txt"
-gs <- gs2
+# gs_name <- "GO_HF12wk_vs_WT12wk.txt"
+# gs <- head(gs1)
+# 
+# term_vec <- c("Steroid biosynthesis", "Lysosome", "Toxoplasmosis", "Prion diseases")
+# gs_name <- "KEGG_HF36wk_vs_WT12wk.txt"
+# gs <- gs2
+# 
+# term_vec <- c("Amoebiasis", "Glioma")
 add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
-  if (is.null(custom_data)) {
+  if (is.null(custom_data) || nrow(custom_data) == 0) {
     custom_data <- data.frame()
   }
   gs <- gs[which(term_vec %in% gs$Term), ]
@@ -175,36 +205,64 @@ add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
   colnames(gs) <- ifelse(colnames(gs) %in% exclude_cols, colnames(gs), 
                          paste(colnames(gs), gs_name, sep="_"))
   
-  if (nrow(custom_data) == 0) {
+  if (is.null(custom_data) || nrow(custom_data) == 0) {
     custom_data <- gs
   } else {
-    custom_data <- merge(custom_data, gs, by=c('Annot', 'Term'), all=TRUE)  
+    # match anything + _ + (gs_name)
+    gsname_cols <-  c(grep(paste0(".*_", gs_name), colnames(custom_data), value=TRUE))
+    
+    # if gs not previously added
+    if (length(gsname_cols) == 0) { # gs not previously added
+      custom_data <- merge(custom_data, gs, by=c('Annot', 'Term'), all=TRUE)
+    } else { # else, gs previously added
+      # custom_data <- bind_rows(custom_data, gs)
+      custom_data <- append_df(custom_data, gs)
+      # didn't work: merge(custom_data, gs, by=c(colnames(gs)), all=TRUE)
+      print(custom_data)
+    }
   }
   # define GeneID cols
   geneid_cols <- c(grep(paste0("^", "GeneID", "_"), colnames(custom_data), value=TRUE))
-  custom_data$GeneID <- apply(custom_data[, geneid_cols], 1, function (x) paste(unique(c(x)), collapse=','))
-  # catch NA
-  custom_data$GeneID <- sapply(custom_data$GeneID, function(x) gsub('NA,', '', x))
-  # catch NA at the end
-  custom_data$GeneID <- sapply(custom_data$GeneID, function(x) gsub(',NA$', '', x, perl=TRUE))
+  tmp <- custom_data[, geneid_cols]
+  if (is.null(dim(tmp))) {
+    names(tmp) <- c("GeneID")
+    custom_data$GeneID <- tmp
+  } else {
+      custom_data$GeneID <- apply(custom_data[, geneid_cols], 1, function (x) paste(unique(c(x)), collapse=','))
+      # catch NA
+      custom_data$GeneID <- sapply(custom_data$GeneID, function(x) gsub('NA,', '', x))
+      # catch NA at the end
+      custom_data$GeneID <- sapply(custom_data$GeneID, function(x) gsub(',NA$', '', x, perl=TRUE))
+  }
   
   return(custom_data)
 }
 
-# remove geneset from custom data
-remove_gs <- function(custom_data, gs) {
-  
-}
-
-# remove terms
-remove_terms <- function(custom_data, term_vec) {
-  
+# remove selected terms/geneset from custom data
+# term_vec <- c("Steroid biosynthesis", "Lysosome")
+# delete_all <- c("Steroid biosynthesis", "Lysosome", "Toxoplasmosis", 
+#                 "Prion diseases", "Terpenoid backbone biosynthesis", "Metabolic pathways")
+remove_gs <- function(custom_data, gs_name, term_vec, delete_all=NULL) {
+  # delete entire geneset if passed term_vec arg "delete_all" w/ all terms
+  if (!is.null(delete_all)) {
+    gs_cols <- c(grep(paste0(".*_", gs_name), colnames(custom_data), value=TRUE)) # match anything + _ + (gs_name)
+    custom_data2 <- custom_data[, -which(colnames(custom_data) %in% gs_cols)]
+    custom_data2 <- custom_data2[-which(custom_data2$Term %in% delete_all), ]
+    if (nrow(custom_data2) == 0) {
+      custom_data2 <- data.frame()
+    }
+  } 
+  # else only delete selected terms
+  else {
+    # subset custom_data by terms to delete
+    custom_data2 <- custom_data[-which(custom_data$Term %in% term_vec), ]
+  }
+  return(custom_data2)
 }
 
 # custom heatmap
-value_type <- "Padj"
+# value_type <- "Padj"
 custom_hmap <- function(custom_data, value_type) {
-  
   # grab either Pvalue or Padj
   value_cols <- c(grep(paste0("^", value_type, "_"), colnames(custom_data), value=TRUE))
   # subset new_final_data by value_type

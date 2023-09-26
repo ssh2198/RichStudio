@@ -100,7 +100,7 @@ server <- function(input, output) {
   clusterTabServer("cluster", u_degnames=u_degnames, u_degdfs=u_degdfs, 
                    u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
                    u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
-  visualizeTabServer("visualize", u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
+  visualizeTabServer("visualize", u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
 }
 
 # Run the application 
