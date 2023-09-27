@@ -248,7 +248,9 @@ add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
 remove_gs <- function(custom_data, gs_name, term_vec, delete_all=NULL) {
   # delete entire geneset if passed term_vec arg "delete_all" w/ all terms
   if (!is.null(delete_all)) {
-    gs_cols <- c(grep(paste0(".*_", gs_name), colnames(custom_data), value=TRUE)) # match anything + _ + (gs_name)
+    # match anything + _ + (gs_name)
+    gs_cols <- c(grep(paste0(".*_", gs_name), colnames(custom_data), value=TRUE))
+    # filter out gs columns and term rows
     custom_data2 <- custom_data[, -which(colnames(custom_data) %in% gs_cols)]
     custom_data2 <- custom_data2[-which(custom_data2$Term %in% delete_all), ]
     if (nrow(custom_data2) == 0) {

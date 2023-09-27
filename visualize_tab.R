@@ -226,8 +226,12 @@ visualizeTabServer <- function(id, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u
     # delete entire result from heatmap
     observeEvent(input$delete_rr, {
       req(input$rr_delete_select)
-      #custom_data_reactive$df <- remove_gs(custom_data_reactive$df, input$rr_delete_select, 
-                                           #input$rr_term_delete_select, rr_custom_list_reactive[[]])
+      gs <- u_rrdfs[[input$rr_delete_select]]
+      all_terms <- gs$Term
+      custom_data_reactive$df <- remove_gs(custom_data=custom_data_reactive$df, gs_name=input$rr_delete_select, 
+                                           input$rr_term_delete_select, all_terms)
+      # remove result name from list
+      rr_custom_list_reactive$labels <- setdiff(rr_custom_list_reactive$labels, input$rr_delete_select)
     })
     
     # plot enrichment result heatmap
