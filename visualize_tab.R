@@ -11,6 +11,8 @@ visualizeTabUI <- function(id, tabName) {
     tabsetPanel(
       tabPanel("Cluster Result Heatmap",
         br(),
+        
+        # CLUSTER HEATMAP
         box(title = "Cluster Heatmap", status = "primary", width = 12, collapsible = TRUE,
           p("Select cluster result to view comprehensive heatmap displaying values for each cluster"),
           selectInput(ns("clusdf_select"), "Select cluster result", choices=NULL, multiple=FALSE),
@@ -29,6 +31,8 @@ visualizeTabUI <- function(id, tabName) {
           plotlyOutput(ns('clusdf_hmap')),
         ),
         br(),
+        
+        # TERM HEATMAP
         box(title = "Term Heatmap", status = "primary", width = 12, collapsible = TRUE,
           p("Select individual clusters to view heatmap of values for each term in cluster"),
           selectInput(ns("indiv_clus_select"), "Select individual clusters", choices=NULL, multiple=TRUE),
@@ -40,9 +44,12 @@ visualizeTabUI <- function(id, tabName) {
           plotlyOutput(ns('indiv_clus_hmap'))
         )
       ),
+      
+      # ENRICHMENT RESULT HEATMAP
       tabPanel("Enrichment Result Heatmap",
         br(),
         tabBox(title = "Edit Heatmap", id="edit_hmap_box", width = 12,
+          # add enrichment result to heatmap
           tabPanel("Add",
             selectInput(ns("rr_add_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
             fluidRow(
@@ -56,6 +63,7 @@ visualizeTabUI <- function(id, tabName) {
             DT::dataTableOutput(ns('rr_select_table')),
             actionButton(ns('add_rr'), "Add terms")
           ),
+          # delete result/terms from heatmap
           tabPanel("Delete",
             selectInput(ns("rr_delete_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
             selectInput(ns("rr_term_delete_select"), "Select terms to delete", choices=NULL, multiple=TRUE),
@@ -75,6 +83,8 @@ visualizeTabUI <- function(id, tabName) {
           plotlyOutput(ns('rr_hmap')),
         )
       ),
+      
+      # CLUSTER INFO TABLE
       tabPanel("Cluster Info",
         br(),
         box(title = "Detailed Cluster Info", status = "primary", width = 12,

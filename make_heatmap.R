@@ -184,28 +184,30 @@ append_df <- function(custom_data, gs) {
   return(combined_df)
 }
 
+
 # CUSTOM TOP TERMS HEATMAP (no clustering req.)
 # add geneset to custom data
-# gs_name <- "GO_HF12wk_vs_WT12wk.txt"
-# gs <- head(gs1)
-# 
-# term_vec <- c("Steroid biosynthesis", "Lysosome", "Toxoplasmosis", "Prion diseases")
-# gs_name <- "KEGG_HF36wk_vs_WT12wk.txt"
-# gs <- gs2
-# 
-# term_vec <- c("Amoebiasis", "Glioma")
+gs_name <- "GO_HF12wk_vs_WT12wk.txt"
+gs <- gs1
+term_vec <- c("acyl-CoA biosynthetic process", "single-organism cellular process", "positive regulation of positive chemotaxis")
+
+gs_name <- "KEGG_HF36wk_vs_WT12wk.txt"
+gs <- gs2
+term_vec <- c("Steroid biosynthesis", "Terpenoid backbone biosynthesis")
+term_vec <- c("Metabolic pathways", "Lysosome")
+
 add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
-  if (is.null(custom_data) || nrow(custom_data) == 0) {
-    custom_data <- data.frame()
-  }
-  gs <- gs[which(term_vec %in% gs$Term), ]
+  
+  # Subset gs by rows with gs$Term in term_vec
+  gs <- gs[which(gs$Term %in% term_vec), ]
   
   # append filename to all colnames except "Annot" and "Term"
   exclude_cols <- c("Annot", "Term")
   colnames(gs) <- ifelse(colnames(gs) %in% exclude_cols, colnames(gs), 
                          paste(colnames(gs), gs_name, sep="_"))
   
-  if (is.null(custom_data) || nrow(custom_data) == 0) {
+  # if custom_data empty, set it to gs
+  if (nrow(custom_data) == 0) {
     custom_data <- gs
   } else {
     # match anything + _ + (gs_name)
@@ -214,14 +216,15 @@ add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
     # if gs not previously added
     if (length(gsname_cols) == 0) { # gs not previously added
       custom_data <- merge(custom_data, gs, by=c('Annot', 'Term'), all=TRUE)
-    } else { # else, gs previously added
-      # custom_data <- bind_rows(custom_data, gs)
+    } 
+    # else, gs previously added
+    else { 
       custom_data <- append_df(custom_data, gs)
       # didn't work: merge(custom_data, gs, by=c(colnames(gs)), all=TRUE)
-      print(custom_data)
     }
   }
-  # define GeneID cols
+  
+  # merge GeneID cols
   geneid_cols <- c(grep(paste0("^", "GeneID", "_"), colnames(custom_data), value=TRUE))
   tmp <- custom_data[, geneid_cols]
   if (is.null(dim(tmp))) {
@@ -234,7 +237,7 @@ add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
       # catch NA at the end
       custom_data$GeneID <- sapply(custom_data$GeneID, function(x) gsub(',NA$', '', x, perl=TRUE))
   }
-  
+  print(custom_data)
   return(custom_data)
 }
 
