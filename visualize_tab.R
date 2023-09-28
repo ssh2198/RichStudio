@@ -203,7 +203,7 @@ visualizeTabServer <- function(id, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u
     # Enrichment Result Heatmap
     # quick make
     ez_listen <- reactive({
-      list(input$ez_add_select, input$ez_value_by, input$ez_nterms)
+      list(input$ez_add_select, input$ez_value_by, input$ez_nterms, input$ez_value_cutoff)
     })
     observeEvent(ez_listen(), {
       req(input$ez_add_select)
@@ -217,17 +217,22 @@ visualizeTabServer <- function(id, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u
         
         for (i in seq_along(input$ez_add_select)) {
           gs <- u_rrdfs[[input$ez_add_select[i]]]
-          sliced_gs <- arrange(gs, value_by_reactive())
-          sliced_gs <- slice_head(sliced_gs, n=input$ez_nterms)
-          term_vec <- sliced_gs$Term
           
-          # add gs to custom_data_reactive
-          custom_data_reactive$df <- add_gs(custom_data=custom_data_reactive$df, gs=gs, 
-                                            gs_name=input$ez_add_select[i], term_vec=term_vec)
-          # add terms to rr_term_vec_reactive
-          rr_term_vec_reactive[[input$rr_add_select]] <- term_vec
-          # add gs name to rr_custom_list_reactive
-          rr_custom_list_reactive$labels <- c(rr_custom_list_reactive$labels, input$rr_add_select)
+          # add gs to list only if there exist values smaller than cutoff
+          if (any(gs[, value_by_reactive()] < input$rr_value_cutoff)) {
+            gs <- filter(gs, gs[, value_by_reactive()]<input$ez_value_cutoff)
+            sliced_gs <- arrange(gs, value_by_reactive())
+            sliced_gs <- slice_head(sliced_gs, n=input$ez_nterms)
+            term_vec <- sliced_gs$Term
+            
+            # add gs to custom_data_reactive
+            custom_data_reactive$df <- add_gs(custom_data=custom_data_reactive$df, gs=gs, 
+                                              gs_name=input$ez_add_select[i], term_vec=term_vec)
+            # add terms to rr_term_vec_reactive
+            rr_term_vec_reactive[[input$rr_add_select]] <- term_vec
+            # add gs name to rr_custom_list_reactive
+            rr_custom_list_reactive$labels <- c(rr_custom_list_reactive$labels, input$rr_add_select)
+          }
         }
       }
       
@@ -249,21 +254,27 @@ visualizeTabServer <- function(id, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u
     observeEvent(input$add_rr, {
       req(input$rr_select_table_rows_selected)
       
-      gs <- u_rrdfs[[input$rr_add_select]] # store df of selected rr
-      term_vec <- gs[input$rr_select_table_rows_selected, ] # subset df with selected rows
-      term_vec <- term_vec$Term # get only Term column of subsetted df
-      
-      # add gs to custom_data_reactive
-      custom_data_reactive$df <- add_gs(custom_data=custom_data_reactive$df, gs=gs, 
-                                     gs_name=input$rr_add_select, term_vec=term_vec)
-    
-      # add terms to rr_term_vec_reactive
-      rr_term_vec_reactive[[input$rr_add_select]] <- term_vec
-      # add gs name to rr_custom_list_reactive
-      rr_custom_list_reactive$labels <- c(rr_custom_list_reactive$labels, input$rr_add_select)
-      
       # set value_by
       value_by_reactive(input$rr_top_value_by)
+      
+      gs <- u_rrdfs[[input$rr_add_select]] # store df of selected rr
+      
+      # ensure there exist values smaller than cutoff before filtering
+      if (any(gs[, value_by_reactive()] < input$rr_value_cutoff)) {
+        gs <- filter(gs, gs[, value_by_reactive()]<input$rr_value_cutoff)
+        term_vec <- gs[input$rr_select_table_rows_selected, ] # subset df with selected rows
+        term_vec <- term_vec$Term # get only Term column of subsetted df
+        
+        # add gs to custom_data_reactive
+        custom_data_reactive$df <- add_gs(custom_data=custom_data_reactive$df, gs=gs, 
+                                          gs_name=input$rr_add_select, term_vec=term_vec)
+        
+        # add terms to rr_term_vec_reactive
+        rr_term_vec_reactive[[input$rr_add_select]] <- term_vec
+        # add gs name to rr_custom_list_reactive
+        rr_custom_list_reactive$labels <- c(rr_custom_list_reactive$labels, input$rr_add_select)
+      }
+      
     })
     
     # remove selected terms from heatmap
@@ -291,9 +302,10 @@ visualizeTabServer <- function(id, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u
     
     # plot enrichment result heatmap
     plot_custom_hmap <- reactive({
-      req(nrow(custom_data_reactive$df) != 0)
-      hmap <- custom_hmap(custom_data=custom_data_reactive$df, value_type=value_by_reactive())
-      return(hmap)
+      if (nrow(custom_data_reactive$df) != 0) {
+        hmap <- custom_hmap(custom_data=custom_data_reactive$df, value_type=value_by_reactive())
+        return(hmap)
+      }
     })
     output$rr_hmap <- renderPlotly({
       plot_custom_hmap()
