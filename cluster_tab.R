@@ -28,7 +28,7 @@ clusterTabUI <- function(id, tabName) {
             selectInput(ns('species_select'), "Select species", c('anopheles', 'arabidopsis', 'bovine', 'celegans', 'canine', 'fly', 'zebrafish',
                                                                    'ecoli', 'chicken', 'human', 'mouse', 'rhesus', 'malaria', 'chipm', 'rat',
                                                                    'toxoplasma', 'sco', 'pig', 'yeast', 'xenopus'), selected='human'),
-             
+            
             actionButton(ns('enrich_deg'), "Enrich")
           ),
           tabPanel("Cluster",

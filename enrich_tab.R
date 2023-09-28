@@ -67,7 +67,24 @@ enrichTabUI <- function(id, tabName) {
             )
           ),
           tabPanel("Dot Plot",
-            
+            br(),
+            box(title="Dot Plot", width=12, status='primary', collapsible=TRUE,
+              br(),
+              selectInput(ns('select_dot'), "Select enrichment result to view", choices=NULL, multiple=FALSE),
+              fluidRow(
+                column(4,
+                  selectInput(ns('dot_valtype'), "View Padj or Pvalue?", choices=c("Padj", "Pvalue"), multiple=FALSE)
+                ),
+                column(4,
+                  numericInput(ns("dot_cutoff"), "P-value cutoff", value=0.05, min=0, max=1)
+                )
+              ),
+              sliderInput(ns("dot_nterms"), "Number of terms to display", value=25, min=0, max=100)
+            ),
+            box(title='Dot Plot', width=12, status='primary', solidHeader=TRUE,
+              br(),
+              plotlyOutput(ns("dotplot"))
+            )
           )
         )
       )
@@ -98,6 +115,7 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
     observe({
       updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'select_bar', choices=u_rrnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'select_dot', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'select_table', choices=u_rrnames_reactive())
     })
     
@@ -134,6 +152,16 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
     })
     output$barplot <- renderPlotly({
       get_rr_barplot()
+    })
+    
+    get_rr_dotplot <- reactive ({
+      req(input$select_dot)
+      df <- u_rrdfs[[input$select_dot]]
+      mydot <- rr_dot(x=df, top=input$dot_nterms, value_cutoff=input$dot_cutoff, value_type=input$dot_valtype)
+      return(mydot)
+    })
+    output$dotplot <- renderPlotly ({
+      get_rr_dotplot()
     })
     
     get_rr_table <- reactive ({

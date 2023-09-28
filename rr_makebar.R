@@ -111,8 +111,8 @@ rr_dot <- function(x, top=30, value_cutoff=0.05, value_type="Padj") {
   ) %>% 
     layout (
       title = paste0("-log10(", value_type, ") for Enriched Terms"),
-      xaxis = list(title = "Rich factor"),
-      yaxis = list(title = "Term", categoryorder = "trace", nticks = top)
+      xaxis = list(title = "Rich Score"),
+      yaxis = list(title = "Term", categoryorder = "trace", tickmode = "linear", nticks = top)
     )
   
 }
