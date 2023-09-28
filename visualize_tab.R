@@ -49,6 +49,19 @@ visualizeTabUI <- function(id, tabName) {
       tabPanel("Enrichment Result Heatmap",
         br(),
         tabBox(title = "Edit Heatmap", id="edit_hmap_box", width = 12,
+          # EZ heatmap
+          tabPanel("Quick make",
+            selectInput(ns("ez_add_select"), "Select enrichment results", choices=NULL, multiple=TRUE),
+            fluidRow(
+              column(4, 
+                selectInput(ns("ez_value_by"), "Select top terms by", choices=c("Padj", "Pvalue")),
+              ),
+              column(4,
+                numericInput(ns("ez_value_cutoff"), "P-value cutoff", value=0.05, min=0, max=1)
+              )
+            ),
+            sliderInput(ns("ez_nterms"), "Number of terms per result to display", value=10, min=0, max=100)
+          ),
           # add enrichment result to heatmap
           tabPanel("Add",
             selectInput(ns("rr_add_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
@@ -58,6 +71,9 @@ visualizeTabUI <- function(id, tabName) {
               ),
               column(4,
                 selectInput(ns('rr_top_value_by'), "Select top terms by", choices=c("Padj", "Pvalue"))
+              ),
+              column(4,
+                numericInput(ns("rr_value_cutoff"), "P-value cutoff", value=0.05, min=0, max=1)
               )
             ),
             DT::dataTableOutput(ns('rr_select_table')),
@@ -134,6 +150,7 @@ visualizeTabServer <- function(id, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u
     observe({
       updateSelectInput(session=getDefaultReactiveDomain(), 'clusdf_select', choices=u_clusnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'indiv_clus_select', choices=term_vec_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'ez_add_select', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'rr_add_select', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'cluslist_select', choices=u_clusnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'rr_delete_select', choices=rr_custom_list_reactive$labels)
@@ -182,6 +199,38 @@ visualizeTabServer <- function(id, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u
     
     
     # Enrichment Result Heatmap
+    # quick make
+    ez_listen <- reactive({
+      list(input$ez_add_select, input$ez_value_by, input$ez_nterms)
+    })
+    observeEvent(ez_listen(), {
+      req(input$ez_add_select)
+      # reset custom_data and the list of added genesets and terms
+      custom_data_reactive$df <- data.frame() 
+      rr_custom_list_reactive <- NULL
+      rr_term_vec_reactive <- NULL
+      
+      if (input$ez_nterms != 0) {
+        
+        for (i in seq_along(input$ez_add_select)) {
+          gs <- u_rrdfs[[input$ez_add_select[i]]]
+          sliced_gs <- arrange(gs, input$ez_value_by)
+          sliced_gs <- slice_head(sliced_gs, n=input$ez_nterms)
+          term_vec <- sliced_gs$Term
+          
+          # add gs to custom_data_reactive
+          custom_data_reactive$df <- add_gs(custom_data=custom_data_reactive$df, gs=gs, 
+                                            gs_name=input$ez_add_select[i], term_vec=term_vec)
+          # add terms to rr_term_vec_reactive
+          rr_term_vec_reactive[[input$rr_add_select]] <- term_vec
+          # add gs name to rr_custom_list_reactive
+          rr_custom_list_reactive$labels <- c(rr_custom_list_reactive$labels, input$rr_add_select)
+        }
+      }
+      
+    })
+    
+    # add
     # reactively update which rr table is read based on selection
     rr_to_table <- reactive ({
       req(input$rr_add_select)
