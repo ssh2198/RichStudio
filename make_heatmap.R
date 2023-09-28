@@ -162,9 +162,6 @@ append_df <- function(custom_data, gs) {
   colnames_cd <- colnames(custom_data)
   colnames_gs <- colnames(gs)
   
-  print(colnames_cd)
-  print(colnames_gs)
-  
   # Identify common and unique columns
   common_cols <- intersect(colnames_cd, colnames_gs)
   cd_only_cols <- setdiff(colnames_cd, colnames_gs)
@@ -180,21 +177,20 @@ append_df <- function(custom_data, gs) {
   
   # Combine the data frames by rows
   combined_df <- rbind(custom_data, gs)
-  print(combined_df)
   return(combined_df)
 }
 
 
 # CUSTOM TOP TERMS HEATMAP (no clustering req.)
 # add geneset to custom data
-gs_name <- "GO_HF12wk_vs_WT12wk.txt"
-gs <- gs1
-term_vec <- c("acyl-CoA biosynthetic process", "single-organism cellular process", "positive regulation of positive chemotaxis")
-
-gs_name <- "KEGG_HF36wk_vs_WT12wk.txt"
-gs <- gs2
-term_vec <- c("Steroid biosynthesis", "Terpenoid backbone biosynthesis")
-term_vec <- c("Metabolic pathways", "Lysosome")
+# gs_name <- "GO_HF12wk_vs_WT12wk.txt"
+# gs <- gs1
+# term_vec <- c("acyl-CoA biosynthetic process", "single-organism cellular process", "positive regulation of positive chemotaxis")
+# 
+# gs_name <- "KEGG_HF36wk_vs_WT12wk.txt"
+# gs <- gs2
+# term_vec <- c("Steroid biosynthesis", "Terpenoid backbone biosynthesis")
+# term_vec <- c("Metabolic pathways", "Lysosome")
 
 add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
   
@@ -220,7 +216,6 @@ add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
     # else, gs previously added
     else { 
       custom_data <- append_df(custom_data, gs)
-      # didn't work: merge(custom_data, gs, by=c(colnames(gs)), all=TRUE)
     }
   }
   
@@ -237,7 +232,6 @@ add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
       # catch NA at the end
       custom_data$GeneID <- sapply(custom_data$GeneID, function(x) gsub(',NA$', '', x, perl=TRUE))
   }
-  print(custom_data)
   return(custom_data)
 }
 

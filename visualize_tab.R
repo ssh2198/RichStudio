@@ -141,6 +141,8 @@ visualizeTabServer <- function(id, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u
     rr_term_vec_reactive <- reactiveValues()
     custom_data_reactive <- reactiveValues(df = data.frame())
     
+    value_by_reactive <- reactiveVal()
+    
     #custom_data <- data.frame()
     # custom_data_reactive <- reactive({
     #   data.frame()
@@ -209,12 +211,13 @@ visualizeTabServer <- function(id, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u
       custom_data_reactive$df <- data.frame() 
       rr_custom_list_reactive <- NULL
       rr_term_vec_reactive <- NULL
+      value_by_reactive(input$ez_value_by)
       
       if (input$ez_nterms != 0) {
         
         for (i in seq_along(input$ez_add_select)) {
           gs <- u_rrdfs[[input$ez_add_select[i]]]
-          sliced_gs <- arrange(gs, input$ez_value_by)
+          sliced_gs <- arrange(gs, value_by_reactive())
           sliced_gs <- slice_head(sliced_gs, n=input$ez_nterms)
           term_vec <- sliced_gs$Term
           
@@ -258,6 +261,9 @@ visualizeTabServer <- function(id, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u
       rr_term_vec_reactive[[input$rr_add_select]] <- term_vec
       # add gs name to rr_custom_list_reactive
       rr_custom_list_reactive$labels <- c(rr_custom_list_reactive$labels, input$rr_add_select)
+      
+      # set value_by
+      value_by_reactive(input$rr_top_value_by)
     })
     
     # remove selected terms from heatmap
@@ -286,7 +292,7 @@ visualizeTabServer <- function(id, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u
     # plot enrichment result heatmap
     plot_custom_hmap <- reactive({
       req(nrow(custom_data_reactive$df) != 0)
-      hmap <- custom_hmap(custom_data=custom_data_reactive$df, value_type=input$rr_top_value_by)
+      hmap <- custom_hmap(custom_data=custom_data_reactive$df, value_type=value_by_reactive())
       return(hmap)
     })
     output$rr_hmap <- renderPlotly({
