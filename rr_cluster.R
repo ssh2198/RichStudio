@@ -1,11 +1,3 @@
-library(tidyverse)
-#library(gtools)
-library(data.table)
-library(dplyr)
-
-library(devtools)
-#install_github("guokai8/richR")
-library(richR)
 
 # SAMPLE GENESETS
 # gs1 <- read.delim("data/try-this/GO_HF12wk_vs_WT12wk.txt")
