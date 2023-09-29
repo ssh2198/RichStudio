@@ -1,117 +1,34 @@
 
-uploadTabUI <- function(id, tabName) {
+uploadTabCopyUI <- function(id, tabName) {
   ns <- NS(id)
+  # Edit Files Subtab
   tabItem(tabName = tabName,
-    # UPLOAD TAB CONTENTS
-    fluidRow(
-      column(width = 4, 
-        tabBox(title="File upload", id='upload_box', width=NULL,
-          # DEG upload panel
-          tabPanel("DEG Sets",
-            br(),
-            fileInput(ns('deg_files'), 'Select files', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
-            helpText("Accepted formats: .txt, .csv, .tsv"),
-            selectInput(ns('deg_sep'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
-            actionButton(ns('upload_deg_file'), "Upload")
-          ),
-          # Rich Result upload panel
-          tabPanel("Enrichment Results",
-            br(),
-            fileInput(ns('rr_files'), 'Select files', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
-            helpText("Accepted formats: .txt, .csv, .tsv"),
-            selectInput(ns('rr_sep'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
-            actionButton(ns('upload_rr_file'), "Upload")
+          tabBox(title="Edit", id="edit_files", width=NULL,
+                 tabPanel("Rename",
+                          selectInput(ns("rename_deg_select"), "Select DEG set", choices=NULL, multiple=FALSE),
+                          textInput(ns("new_deg_name"), "Name", placeholder="New DEG set name"),
+                          # rename enrichment results
+                          selectInput(ns("rename_rr_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
+                          textInput(ns("new_rr_name"), "Name", placeholder="New enrichment result name"),
+                          # rename cluster results
+                          selectInput(ns("rename_clus_select"), "Select cluster result", choices=NULL, multiple=FALSE),
+                          textInput(ns("new_clus_name"), "Name", placeholder="New cluster result name"),
+                          br(),
+                          actionButton(ns('rename_btn'), "Rename selection")
+                 ),
+                 tabPanel("Remove",
+                          selectInput(ns("remove_deg_select"), "Select DEG sets to remove", choices=NULL, multiple=TRUE),
+                          selectInput(ns("remove_rr_select"), "Select enrichment results to remove", choices=NULL, multiple=TRUE),
+                          selectInput(ns("remove_clus_select"), "Select cluster results to remove", choices=NULL, multiple=TRUE),
+                          br(),
+                          actionButton(ns('remove_btn'), "Remove selection")
+                 )
           )
-        ),
-      ),
-      column(width = 4,
-        tabBox(title="Text input", id='text_upload', width=NULL,
-          tabPanel("DEG Sets",
-            br(),
-            textAreaInput(ns('deg_text'), "Text Input", placeholder="Paste list of significant genes"),
-            textInput(ns('degtext_name'), "Name", placeholder="Set name for pasted gene list"),
-            actionButton(ns('upload_degtext'), "Upload")
-          ),
-          tabPanel("Enrichment Results",
-          )
-        )
-      ),
-      column(width = 4,
-        tabBox(title="Update files", id="update_files", width=NULL,
-          tabPanel("Rename",
-            selectInput(ns("rename_deg_select"), "Select DEG set", choices=NULL, multiple=FALSE),
-            textInput(ns("new_deg_name"), "Name", placeholder="New DEG set name"),
-            # rename enrichment results
-            selectInput(ns("rename_rr_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
-            textInput(ns("new_rr_name"), "Name", placeholder="New enrichment result name"),
-            # rename cluster results
-            selectInput(ns("rename_clus_select"), "Select cluster result", choices=NULL, multiple=FALSE),
-            textInput(ns("new_clus_name"), "Name", placeholder="New cluster result name"),
-            br(),
-            actionButton(ns('rename_btn'), "Rename selection")
-          ),
-          tabPanel("Remove",
-            selectInput(ns("remove_deg_select"), "Select DEG sets to remove", choices=NULL, multiple=TRUE),
-            selectInput(ns("remove_rr_select"), "Select enrichment results to remove", choices=NULL, multiple=TRUE),
-            selectInput(ns("remove_clus_select"), "Select cluster results to remove", choices=NULL, multiple=TRUE),
-            br(),
-            actionButton(ns('remove_btn'), "Remove selection")
-          )
-        )
-      )
-    ),
-    tabBox(title="Table view/export", id='table_box', width=NULL,
-      tabPanel("DEG sets",
-        fluidRow(
-          column(4,
-            selectInput(ns('deg_table_select'), "Select DEG set", choices=NULL),
-          ),
-          column(4,
-            selectInput(ns('deg_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
-          )
-        ),
-        downloadButton(ns("download_deg"), "Download"),
-        br(),
-        br(),
-        br(),
-        DT::dataTableOutput(ns('deg_table')),
-      ),
-      tabPanel("Enrichment results",
-        fluidRow(
-          column(4,
-            selectInput(ns('rr_table_select'), "Select enrichment result", choices=NULL),
-          ),
-          column(4,
-            selectInput(ns('rr_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
-          )
-        ),
-        downloadButton(ns("download_rr"), "Download"),
-        br(),
-        br(),
-        br(),
-        DT::dataTableOutput(ns('rr_table')),
-      ),
-      tabPanel("Cluster results",
-        fluidRow(
-          column(4,
-            selectInput(ns('clus_table_select'), "Select cluster result", choices=NULL),
-          ),
-          column(4,
-            selectInput(ns('clus_export_type'), "Export as", choices=c(".txt", ".csv", ".tsv"))
-          )
-        ),
-        downloadButton(ns("download_clus"), "Download"),
-        br(),
-        br(),
-        br(),
-        DT::dataTableOutput(ns('clus_table')),
-      )
-    )
   )
 }
 
 
-uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u_cluslists) {
+uploadTabCopyServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u_cluslists) {
   
   moduleServer(id, function(input, output, session) {
     
@@ -213,9 +130,9 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
         # read file based on file extension
         if (ext != "txt") {
           df <- switch(ext,
-            csv = read.csv(path),
-            tsv = read.delim(path),
-            xls = readxl::read_excel(path)
+                       csv = read.csv(path),
+                       tsv = read.delim(path),
+                       xls = readxl::read_excel(path)
           )
         } else if (ext == "txt" && input$deg_sep != "Guess") {
           df <- read.csv(path, sep=input$deg_sep)
@@ -260,7 +177,7 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       u_degdfs[[lab]] <- df # set u_degdfs
       u_degnames$labels <- c(u_degnames$labels, lab)
     })
-
+    
     # reactively update which deg table is read based on selection
     deg_to_table <- reactive ({
       req(input$deg_table_select)
@@ -306,9 +223,9 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
         # read file based on file extension
         if (ext != "txt") {
           df <- switch(ext,
-            csv = read.csv(path),
-            tsv = read.delim(path),
-            xls = readxl::read_excel(path)
+                       csv = read.csv(path),
+                       tsv = read.delim(path),
+                       xls = readxl::read_excel(path)
           )
         } else if (ext == "txt" && input$rr_sep != "Guess") {
           df <- read.csv(path, sep=input$rr_sep)

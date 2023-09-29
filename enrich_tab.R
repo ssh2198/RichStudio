@@ -20,7 +20,6 @@ enrichTabUI <- function(id, tabName) {
           selectInput(ns('species_select'), "Select species", c('anopheles', 'arabidopsis', 'bovine', 'celegans', 'canine', 'fly', 'zebrafish',
                                                                 'ecoli', 'chicken', 'human', 'mouse', 'rhesus', 'malaria', 'chipm', 'rat',
                                                                 'toxoplasma', 'sco', 'pig', 'yeast', 'xenopus'), selected='human'),
-          
           actionButton(ns('enrich_deg'), "Enrich")
         )
       ),
@@ -79,6 +78,59 @@ enrichTabUI <- function(id, tabName) {
               br(),
               plotlyOutput(ns("dotplot"))
             )
+          ),
+          tabPanel("Heatmap",
+                   br(),
+                   tabBox(title = "Edit Heatmap", id="edit_hmap_box", width = 12,
+                          # EZ heatmap
+                          tabPanel("Quick make",
+                                   selectInput(ns("ez_add_select"), "Select enrichment results", choices=NULL, multiple=TRUE),
+                                   fluidRow(
+                                     column(4, 
+                                            selectInput(ns("ez_value_by"), "Select top terms by", choices=c("Padj", "Pvalue")),
+                                     ),
+                                     column(4,
+                                            numericInput(ns("ez_value_cutoff"), "P-value cutoff", value=0.05, min=0, max=1)
+                                     )
+                                   ),
+                                   sliderInput(ns("ez_nterms"), "Number of terms per result to display", value=10, min=0, max=100)
+                          ),
+                          # add enrichment result to heatmap
+                          tabPanel("Add",
+                                   selectInput(ns("rr_add_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
+                                   fluidRow(
+                                     column(4,
+                                            numericInput(ns('top_rr_terms'), "Select top ? terms", value = 20, min=0, max=100)
+                                     ),
+                                     column(4,
+                                            selectInput(ns('rr_top_value_by'), "Select top terms by", choices=c("Padj", "Pvalue"))
+                                     ),
+                                     column(4,
+                                            numericInput(ns("rr_value_cutoff"), "P-value cutoff", value=0.05, min=0, max=1)
+                                     )
+                                   ),
+                                   DT::dataTableOutput(ns('rr_select_table')),
+                                   actionButton(ns('add_rr'), "Add terms")
+                          ),
+                          # delete result/terms from heatmap
+                          tabPanel("Delete",
+                                   selectInput(ns("rr_delete_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
+                                   selectInput(ns("rr_term_delete_select"), "Select terms to delete", choices=NULL, multiple=TRUE),
+                                   fluidRow(
+                                     column(4,
+                                            actionButton(ns('delete_rr_terms'), "Delete selected terms")
+                                     ),
+                                     column(4,
+                                            actionButton(ns('delete_rr'), "Delete entire result")
+                                     )
+                                   )
+                          )
+                   ),
+                   br(),
+                   box(title="Enrichment Result Heatmap", status="primary", width=12,
+                       solidHeader = TRUE,
+                       plotlyOutput(ns('rr_hmap')),
+                   )
           )
         )
       )
@@ -105,12 +157,20 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
     u_clusdfs_reactive <- reactive(u_clusdfs)
     u_cluslists_reactive <- reactive(u_cluslists)
     
+    rr_custom_list_reactive <- reactiveValues(labels=NULL)
+    rr_term_vec_reactive <- reactiveValues()
+    custom_data_reactive <- reactiveValues(df = data.frame())
+    
+    value_by_reactive <- reactiveVal()
+    
     # update select inputs based on # file inputs
     observe({
       updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'select_bar', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'select_dot', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'select_table', choices=u_rrnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'ez_add_select', choices=u_rrnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'rr_add_select', choices=u_rrnames_reactive())
     })
     
     
@@ -165,6 +225,117 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
     })
     output$rr_table <- DT::renderDataTable({
       get_rr_table()
+    })
+    
+    # Enrichment Result Heatmap
+    # quick make
+    ez_listen <- reactive({
+      list(input$ez_add_select, input$ez_value_by, input$ez_nterms, input$ez_value_cutoff)
+    })
+    observeEvent(ez_listen(), {
+      req(input$ez_add_select)
+      # reset custom_data and the list of added genesets and terms
+      custom_data_reactive$df <- data.frame() 
+      rr_custom_list_reactive <- NULL
+      rr_term_vec_reactive <- NULL
+      value_by_reactive(input$ez_value_by)
+      
+      if (input$ez_nterms != 0) {
+        
+        for (i in seq_along(input$ez_add_select)) {
+          gs <- u_rrdfs[[input$ez_add_select[i]]]
+          
+          # add gs to list only if there exist values smaller than cutoff
+          if (any(gs[, value_by_reactive()] < input$rr_value_cutoff)) {
+            gs <- filter(gs, gs[, value_by_reactive()]<input$ez_value_cutoff)
+            sliced_gs <- arrange(gs, value_by_reactive())
+            sliced_gs <- slice_head(sliced_gs, n=input$ez_nterms)
+            term_vec <- sliced_gs$Term
+            
+            # add gs to custom_data_reactive
+            custom_data_reactive$df <- add_gs(custom_data=custom_data_reactive$df, gs=gs, 
+                                              gs_name=input$ez_add_select[i], term_vec=term_vec)
+            # add terms to rr_term_vec_reactive
+            rr_term_vec_reactive[[input$rr_add_select]] <- term_vec
+            # add gs name to rr_custom_list_reactive
+            rr_custom_list_reactive$labels <- c(rr_custom_list_reactive$labels, input$rr_add_select)
+          }
+        }
+      }
+      
+    })
+    
+    # add
+    # reactively update which rr table is read based on selection
+    rr_to_table <- reactive ({
+      req(input$rr_add_select)
+      df <- u_rrdfs[[input$rr_add_select]]
+      return(df)
+    })
+    # output rr table
+    output$rr_select_table = DT::renderDataTable(
+      rr_to_table()
+    )
+    
+    # add selected terms to heatmap
+    observeEvent(input$add_rr, {
+      req(input$rr_select_table_rows_selected)
+      
+      # set value_by
+      value_by_reactive(input$rr_top_value_by)
+      
+      gs <- u_rrdfs[[input$rr_add_select]] # store df of selected rr
+      
+      # ensure there exist values smaller than cutoff before filtering
+      if (any(gs[, value_by_reactive()] < input$rr_value_cutoff)) {
+        gs <- filter(gs, gs[, value_by_reactive()]<input$rr_value_cutoff)
+        term_vec <- gs[input$rr_select_table_rows_selected, ] # subset df with selected rows
+        term_vec <- term_vec$Term # get only Term column of subsetted df
+        
+        # add gs to custom_data_reactive
+        custom_data_reactive$df <- add_gs(custom_data=custom_data_reactive$df, gs=gs, 
+                                          gs_name=input$rr_add_select, term_vec=term_vec)
+        
+        # add terms to rr_term_vec_reactive
+        rr_term_vec_reactive[[input$rr_add_select]] <- term_vec
+        # add gs name to rr_custom_list_reactive
+        rr_custom_list_reactive$labels <- c(rr_custom_list_reactive$labels, input$rr_add_select)
+      }
+      
+    })
+    
+    # remove selected terms from heatmap
+    observeEvent(input$delete_rr_terms, {
+      req(input$rr_term_delete_select)
+      req(input$rr_delete_select)
+      custom_data_reactive$df <- remove_gs(custom_data_reactive$df, input$rr_delete_select, input$rr_term_delete_select)
+      
+      tmp <- rr_term_vec_reactive[[input$rr_delete_select]]
+      rr_term_vec_reactive[[input$rr_delete_select]] <- tmp[-which(tmp %in% input$rr_term_delete_select)]
+      updateSelectInput(session=getDefaultReactiveDomain(), 'rr_term_delete_select', 
+                        choices=rr_term_vec_reactive[[input$rr_delete_select]])
+    })
+    
+    # delete entire result from heatmap
+    observeEvent(input$delete_rr, {
+      req(input$rr_delete_select)
+      gs <- u_rrdfs[[input$rr_delete_select]]
+      all_terms <- gs$Term
+      custom_data_reactive$df <- remove_gs(custom_data=custom_data_reactive$df, gs_name=input$rr_delete_select, 
+                                           input$rr_term_delete_select, all_terms)
+      # remove result name from list
+      rr_custom_list_reactive$labels <- setdiff(rr_custom_list_reactive$labels, input$rr_delete_select)
+    })
+    
+    # plot enrichment result heatmap
+    plot_custom_hmap <- reactive({
+      if (nrow(custom_data_reactive$df) != 0) {
+        hmap <- custom_hmap(custom_data=custom_data_reactive$df, value_type=value_by_reactive())
+        return(hmap)
+      }
+    })
+    output$rr_hmap <- renderPlotly({
+      plot_custom_hmap()
     })
     
   })
