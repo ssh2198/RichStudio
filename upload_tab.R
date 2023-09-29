@@ -34,6 +34,7 @@ uploadTabUI <- function(id, tabName) {
             br(),
             textAreaInput(ns('deg_text'), "Text Input", placeholder="Paste list of significant genes"),
             textInput(ns('degtext_name'), "Name", placeholder="Set name for pasted gene list"),
+            actionButton(ns('upload_degtext'), "Upload")
           ),
           tabPanel("Enrichment Results",
           )
@@ -230,6 +231,17 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
         u_degnames$labels <- c(u_degnames$labels, lab) # set u_degnames 
       }
       
+    })
+    
+    observeEvent(input$upload_degtext, {
+      req(input$deg_text, input$degtext_name)
+      x <- strsplit(input$deg_text, "[^[:alnum:]]+")
+      df <- data.frame(GeneID = x)
+      colnames(df) <- c("GeneID")
+      lab <- input$degtext_name
+      
+      u_degdfs[[lab]] <- df # set u_degdfs
+      u_degnames$labels <- c(u_degnames$labels, lab)
     })
     
     # when rename deg button clicked
