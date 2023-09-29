@@ -5,7 +5,7 @@ uploadTabUI <- function(id, tabName) {
     # UPLOAD TAB CONTENTS
     fluidRow(
       column(width = 6, 
-        tabBox(title="File upload", id='upload_box', width=NULL,
+        tabBox(title=span(icon("upload"), "File upload"), id='upload_box', width=NULL,
           # DEG upload panel
           tabPanel("DEG Sets",
             fileInput(ns('deg_files'), 'Select files', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
@@ -23,7 +23,7 @@ uploadTabUI <- function(id, tabName) {
         ),
       ),
       column(width = 6,
-        tabBox(title="Text input", id='text_upload', width=NULL,
+        tabBox(title=span(icon("pencil"), "Text input"), id='text_upload', width=NULL, 
           tabPanel("DEG Sets",
             br(),
             textAreaInput(ns('deg_text'), "Text Input", placeholder="Paste list of significant genes"),
@@ -35,7 +35,7 @@ uploadTabUI <- function(id, tabName) {
         )
       ),
     ),
-    tabBox(title="Table view/export", id='table_box', width=NULL,
+    tabBox(title="Table view/export", id='table_box', width=NULL, 
       tabPanel("DEG sets",
         fluidRow(
           column(4,

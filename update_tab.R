@@ -21,7 +21,7 @@ updateTabUI <- function(id, tabName) {
         )
       ),
       column(width = 6,
-        box(title="Remove", status="warning", width=NULL, solidHeader=TRUE,
+        box(title="Remove", status="danger", width=NULL, solidHeader=TRUE,
           selectInput(ns("remove_deg_select"), "Select DEG sets to remove", choices=NULL, multiple=TRUE),
           selectInput(ns("remove_rr_select"), "Select enrichment results to remove", choices=NULL, multiple=TRUE),
           selectInput(ns("remove_clus_select"), "Select cluster results to remove", choices=NULL, multiple=TRUE),

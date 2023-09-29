@@ -31,20 +31,18 @@ enrichTabUI <- function(id, tabName) {
           
           # Table
           tabPanel("Table",
-            br(),
-            box(title="Table View", width=12, status='primary', collapsible=TRUE,
+            box(title="Table View", width=NULL, status='primary', collapsible=TRUE,
               br(),
               selectInput(ns('select_table'), "Select enrichment result to view", choices=NULL, multiple=FALSE),
             ),
-            box(title='Table View', width=12, status='primary', solidHeader=TRUE,
+            box(title='Table View', width=NULL, status='info', solidHeader=TRUE,
               DT::dataTableOutput(ns('rr_table'))
             )
           ),
           
           # Bar plot
           tabPanel("Bar Plot",
-            br(),
-            box(title="Bar Plot", width=12, status='primary', collapsible=TRUE,
+            box(title="Bar Plot", width=NULL, status='primary', collapsible=TRUE,
               br(),
               selectInput(ns('select_bar'), "Select enrichment result to view", choices=NULL, multiple=FALSE),
               fluidRow(
@@ -60,7 +58,7 @@ enrichTabUI <- function(id, tabName) {
               ),
               sliderInput(ns("bar_nterms"), "Number of terms to display", value=25, min=0, max=100)
             ),
-            box(title='Bar Plot', width=12, status='primary', solidHeader=TRUE,
+            box(title='Bar Plot', width=NULL, status='info', solidHeader=TRUE,
               br(),
               plotlyOutput(ns("barplot"))
             )
@@ -68,8 +66,7 @@ enrichTabUI <- function(id, tabName) {
           
           # Dot plot
           tabPanel("Dot Plot",
-            br(),
-            box(title="Dot Plot", width=12, status='primary', collapsible=TRUE,
+            box(title="Dot Plot", width=NULL, status='primary', collapsible=TRUE,
               br(),
               selectInput(ns('select_dot'), "Select enrichment result to view", choices=NULL, multiple=FALSE),
               fluidRow(
@@ -82,7 +79,7 @@ enrichTabUI <- function(id, tabName) {
               ),
               sliderInput(ns("dot_nterms"), "Number of terms to display", value=25, min=0, max=100)
             ),
-            box(title='Dot Plot', width=12, status='primary', solidHeader=TRUE,
+            box(title='Dot Plot', width=NULL, status='info', solidHeader=TRUE,
               br(),
               plotlyOutput(ns("dotplot"))
             )
@@ -90,8 +87,7 @@ enrichTabUI <- function(id, tabName) {
           
           # Heatmap
           tabPanel("Heatmap",
-            br(),
-            tabBox(title = "Edit Heatmap", id="edit_hmap_box", width = 12,
+            tabBox(title = "Edit Heatmap", id="edit_hmap_box", width = NULL,
               # EZ heatmap
               tabPanel("Quick make",
                 selectInput(ns("ez_add_select"), "Select enrichment results", choices=NULL, multiple=TRUE),
@@ -137,7 +133,7 @@ enrichTabUI <- function(id, tabName) {
               )
             ),
             br(),
-            box(title="Enrichment Result Heatmap", status="primary", width=12,
+            box(title="Enrichment Result Heatmap", status="info", width=NULL,
                 solidHeader = TRUE,
                 plotlyOutput(ns('rr_hmap')),
             )

@@ -42,7 +42,6 @@ source('upload_tab.R')
 source('update_tab.R')
 source('enrich_tab.R')
 source('cluster_tab.R')
-source('visualize_tab.R')
 
 
 ui <- dashboardPage(
@@ -50,13 +49,12 @@ ui <- dashboardPage(
   dashboardHeader(title = "RichStudio"),
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Upload", tabName = "upload_tab",
-        menuSubItem("Upload files", tabName="upload_files"),
-        menuSubItem("Rename/remove files", tabName="update_files")
+      menuItem("Upload", icon = icon("plus"), tabName = "upload_tab",
+        menuSubItem("Upload files", icon=icon("upload"), tabName="upload_files"),
+        menuSubItem("Rename/remove files", icon=icon("pencil"), tabName="update_files")
       ),
-      menuItem("Enrichment", tabName = "enrich_tab"),
-      menuItem("Clustering", tabName = "cluster_tab"),
-      menuItem("Visualize", tabName = "visualize_tab")
+      menuItem("Enrichment", icon=icon("flask"), tabName = "enrich_tab"),
+      menuItem("Clustering", icon=icon("layer-group"), tabName = "cluster_tab")
     )
   ),
   
@@ -65,8 +63,7 @@ ui <- dashboardPage(
       uploadTabUI("upload", tabName="upload_files"),
       updateTabUI("update", tabName="update_files"),
       enrichTabUI("enrich", tabName="enrich_tab"),
-      clusterTabUI("cluster", tabName="cluster_tab"),
-      visualizeTabUI("visualize", tabName="visualize_tab")
+      clusterTabUI("cluster", tabName="cluster_tab")
     ),
     tags$head(
       tags$style(
@@ -99,7 +96,7 @@ server <- function(input, output) {
   uploadTabServer("upload", u_degnames=u_degnames, u_degdfs=u_degdfs, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
                   u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
-  updateTabServer("upload", u_degnames=u_degnames, u_degdfs=u_degdfs, 
+  updateTabServer("update", u_degnames=u_degnames, u_degdfs=u_degdfs, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
                   u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
   enrichTabServer("enrich", u_degnames=u_degnames, u_degdfs=u_degdfs, 
@@ -108,7 +105,6 @@ server <- function(input, output) {
   clusterTabServer("cluster", u_degnames=u_degnames, u_degdfs=u_degdfs, 
                    u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
                    u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
-  visualizeTabServer("visualize", u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
 }
 
 # Run the application 
