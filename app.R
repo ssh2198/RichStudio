@@ -11,7 +11,6 @@ library(shiny)
 library(shinydashboard)
 library(tidyverse)
 library(tools)
-#library(gtools)
 library(readxl)
 library(data.table)
 library(ggplot2)
@@ -19,18 +18,23 @@ library(dplyr)
 library(plotly)
 library(DT)
 library(devtools)
+library(config)
 
 #install_github("guokai8/richR")
 library(richR)
 library(bioAnno)
 
 #SET WORKING DIRECTORY
-getwd()
-library(rstudioapi) 
-current_path <- getActiveDocumentContext()$path 
-setwd(dirname(current_path))
-base_dir = dirname(current_path)
-output = "output/"
+# getwd()
+# library(rstudioapi) 
+# current_path <- getActiveDocumentContext()$path 
+# setwd(dirname(current_path))
+# base_dir = dirname(current_path)
+# output = "output/"
+
+# CONFIG set working directory
+config_vars <- config::get("hurlab-server")
+setwd(config_vars$project_directory)
 
 # SOURCE RELATED SCRIPTS
 source('deg_enrich.R')

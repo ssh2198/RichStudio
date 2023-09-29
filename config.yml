@@ -1,0 +1,3 @@
+default:
+  hurlab-server:
+    project-directory: '/home/sarah/shinyapps/enrichment-analysis'
