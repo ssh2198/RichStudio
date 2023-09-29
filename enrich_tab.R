@@ -23,9 +23,13 @@ enrichTabUI <- function(id, tabName) {
           actionButton(ns('enrich_deg'), "Enrich")
         )
       ),
+      
+      # VISUALIZATION
       column(width = 8,
         h3("Enrichment Result Visualization"),
         tabsetPanel(
+          
+          # Table
           tabPanel("Table",
             br(),
             box(title="Table View", width=12, status='primary', collapsible=TRUE,
@@ -36,6 +40,8 @@ enrichTabUI <- function(id, tabName) {
               DT::dataTableOutput(ns('rr_table'))
             )
           ),
+          
+          # Bar plot
           tabPanel("Bar Plot",
             br(),
             box(title="Bar Plot", width=12, status='primary', collapsible=TRUE,
@@ -59,6 +65,8 @@ enrichTabUI <- function(id, tabName) {
               plotlyOutput(ns("barplot"))
             )
           ),
+          
+          # Dot plot
           tabPanel("Dot Plot",
             br(),
             box(title="Dot Plot", width=12, status='primary', collapsible=TRUE,
@@ -79,58 +87,60 @@ enrichTabUI <- function(id, tabName) {
               plotlyOutput(ns("dotplot"))
             )
           ),
+          
+          # Heatmap
           tabPanel("Heatmap",
-                   br(),
-                   tabBox(title = "Edit Heatmap", id="edit_hmap_box", width = 12,
-                          # EZ heatmap
-                          tabPanel("Quick make",
-                                   selectInput(ns("ez_add_select"), "Select enrichment results", choices=NULL, multiple=TRUE),
-                                   fluidRow(
-                                     column(4, 
-                                            selectInput(ns("ez_value_by"), "Select top terms by", choices=c("Padj", "Pvalue")),
-                                     ),
-                                     column(4,
-                                            numericInput(ns("ez_value_cutoff"), "P-value cutoff", value=0.05, min=0, max=1)
-                                     )
-                                   ),
-                                   sliderInput(ns("ez_nterms"), "Number of terms per result to display", value=10, min=0, max=100)
-                          ),
-                          # add enrichment result to heatmap
-                          tabPanel("Add",
-                                   selectInput(ns("rr_add_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
-                                   fluidRow(
-                                     column(4,
-                                            numericInput(ns('top_rr_terms'), "Select top ? terms", value = 20, min=0, max=100)
-                                     ),
-                                     column(4,
-                                            selectInput(ns('rr_top_value_by'), "Select top terms by", choices=c("Padj", "Pvalue"))
-                                     ),
-                                     column(4,
-                                            numericInput(ns("rr_value_cutoff"), "P-value cutoff", value=0.05, min=0, max=1)
-                                     )
-                                   ),
-                                   DT::dataTableOutput(ns('rr_select_table')),
-                                   actionButton(ns('add_rr'), "Add terms")
-                          ),
-                          # delete result/terms from heatmap
-                          tabPanel("Delete",
-                                   selectInput(ns("rr_delete_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
-                                   selectInput(ns("rr_term_delete_select"), "Select terms to delete", choices=NULL, multiple=TRUE),
-                                   fluidRow(
-                                     column(4,
-                                            actionButton(ns('delete_rr_terms'), "Delete selected terms")
-                                     ),
-                                     column(4,
-                                            actionButton(ns('delete_rr'), "Delete entire result")
-                                     )
-                                   )
-                          )
-                   ),
-                   br(),
-                   box(title="Enrichment Result Heatmap", status="primary", width=12,
-                       solidHeader = TRUE,
-                       plotlyOutput(ns('rr_hmap')),
-                   )
+            br(),
+            tabBox(title = "Edit Heatmap", id="edit_hmap_box", width = 12,
+              # EZ heatmap
+              tabPanel("Quick make",
+                selectInput(ns("ez_add_select"), "Select enrichment results", choices=NULL, multiple=TRUE),
+                fluidRow(
+                  column(4, 
+                    selectInput(ns("ez_value_by"), "Select top terms by", choices=c("Padj", "Pvalue")),
+                  ),
+                  column(4,
+                    numericInput(ns("ez_value_cutoff"), "P-value cutoff", value=0.05, min=0, max=1)
+                  )
+                ),
+                sliderInput(ns("ez_nterms"), "Number of terms per result to display", value=10, min=0, max=100)
+              ),
+              # add enrichment result to heatmap
+              tabPanel("Add",
+                selectInput(ns("rr_add_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
+                fluidRow(
+                  column(4,
+                    numericInput(ns('top_rr_terms'), "Select top ? terms", value = 20, min=0, max=100)
+                  ),
+                  column(4,
+                    selectInput(ns('rr_top_value_by'), "Select top terms by", choices=c("Padj", "Pvalue"))
+                  ),
+                  column(4,
+                    numericInput(ns("rr_value_cutoff"), "P-value cutoff", value=0.05, min=0, max=1)
+                  )
+                ),
+                DT::dataTableOutput(ns('rr_select_table')),
+                actionButton(ns('add_rr'), "Add terms")
+              ),
+              # delete result/terms from heatmap
+              tabPanel("Delete",
+                selectInput(ns("rr_delete_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
+                selectInput(ns("rr_term_delete_select"), "Select terms to delete", choices=NULL, multiple=TRUE),
+                fluidRow(
+                  column(4,
+                    actionButton(ns('delete_rr_terms'), "Delete selected terms")
+                  ),
+                  column(4,
+                    actionButton(ns('delete_rr'), "Delete entire result")
+                  )
+                )
+              )
+            ),
+            br(),
+            box(title="Enrichment Result Heatmap", status="primary", width=12,
+                solidHeader = TRUE,
+                plotlyOutput(ns('rr_hmap')),
+            )
           )
         )
       )

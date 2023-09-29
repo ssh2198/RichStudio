@@ -4,11 +4,10 @@ uploadTabUI <- function(id, tabName) {
   tabItem(tabName = tabName,
     # UPLOAD TAB CONTENTS
     fluidRow(
-      column(width = 4, 
+      column(width = 6, 
         tabBox(title="File upload", id='upload_box', width=NULL,
           # DEG upload panel
           tabPanel("DEG Sets",
-            br(),
             fileInput(ns('deg_files'), 'Select files', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
             helpText("Accepted formats: .txt, .csv, .tsv"),
             selectInput(ns('deg_sep'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
@@ -16,15 +15,12 @@ uploadTabUI <- function(id, tabName) {
           ),
           # Rich Result upload panel
           tabPanel("Enrichment Results",
-            br(),
             fileInput(ns('rr_files'), 'Select files', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
             helpText("Accepted formats: .txt, .csv, .tsv"),
             selectInput(ns('rr_sep'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
             actionButton(ns('upload_rr_file'), "Upload")
           )
         ),
-      ),
-      column(width = 4,
         tabBox(title="Text input", id='text_upload', width=NULL,
           tabPanel("DEG Sets",
             br(),
@@ -36,7 +32,7 @@ uploadTabUI <- function(id, tabName) {
           )
         )
       ),
-      column(width = 4,
+      column(width = 6,
         tabBox(title="Update files", id="update_files", width=NULL,
           tabPanel("Rename",
             selectInput(ns("rename_deg_select"), "Select DEG set", choices=NULL, multiple=FALSE),
