@@ -203,7 +203,7 @@ add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
     
     # if gs not previously added
     if (length(gsname_cols) == 0) { # gs not previously added
-      custom_data <- merge(custom_data, gs, by=c('Annot', 'Term'), all=TRUE)
+      custom_data <- base::merge(custom_data, gs, by=c('Annot', 'Term'), all=TRUE)
     } 
     # else, gs previously added
     else { 

@@ -25,7 +25,7 @@ merge_genesets <- function(genesets) {
   
   # merge genesets
   for (i in 2:length(genesets)) {
-    merged_gs <- merge(merged_gs, genesets[[i]], by='Term', all=TRUE)
+    merged_gs <- base::merge(merged_gs, genesets[[i]], by='Term', all=TRUE)
   }
   
   # combine unique 'GeneID' elements

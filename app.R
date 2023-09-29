@@ -25,16 +25,16 @@ library(richR)
 library(bioAnno)
 
 #SET WORKING DIRECTORY
-# getwd()
-# library(rstudioapi) 
-# current_path <- getActiveDocumentContext()$path 
-# setwd(dirname(current_path))
-# base_dir = dirname(current_path)
-# output = "output/"
+getwd()
+library(rstudioapi)
+current_path <- getActiveDocumentContext()$path
+setwd(dirname(current_path))
+base_dir = dirname(current_path)
+output = "output/"
 
 # CONFIG set working directory
-config_vars <- config::get("hurlab-server")
-setwd(config_vars$project_directory)
+# config_vars <- config::get("hurlab-server")
+# setwd(config_vars$project_directory)
 
 # SOURCE RELATED SCRIPTS
 source('deg_enrich.R')
