@@ -46,12 +46,12 @@ source('visualize_tab.R')
 
 ui <- dashboardPage(
   
-  dashboardHeader(title = "Enrichment Analysis"),
+  dashboardHeader(title = "RichStudio"),
   dashboardSidebar(
     sidebarMenu(
       menuItem("Upload", tabName = "upload_tab"),
-      menuItem("Enrich", tabName = "enrich_tab"),
-      menuItem("Cluster", tabName = "cluster_tab"),
+      menuItem("Enrichment", tabName = "enrich_tab"),
+      menuItem("Clustering", tabName = "cluster_tab"),
       menuItem("Visualize", tabName = "visualize_tab")
     )
   ),

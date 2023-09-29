@@ -1,8 +1,8 @@
+# ENRICH TAB CONTENTS
 
 enrichTabUI <- function(id, tabName) {
   ns <- NS(id)
   tabItem(tabName = tabName,
-    # ENRICH TAB CONTENTS
     fluidRow(
       column(width = 4,
         box(title="Enrich", width=12, status="primary", solidHeader=TRUE,

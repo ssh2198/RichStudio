@@ -5,11 +5,11 @@ uploadTabUI <- function(id, tabName) {
     # UPLOAD TAB CONTENTS
     fluidRow(
       column(width = 4, 
-        tabBox(title="Upload Files", id='upload_box', width=12,
+        tabBox(title="File upload", id='upload_box', height=600, width=NULL,
           # DEG upload panel
           tabPanel("DEG Sets",
             br(),
-            fileInput(ns('deg_files'), 'File Input', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
+            fileInput(ns('deg_files'), 'Select files', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
             helpText("Accepted formats: .txt, .csv, .tsv"),
             selectInput(ns('deg_sep'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
             actionButton(ns('upload_deg_file'), "Upload")
@@ -17,13 +17,15 @@ uploadTabUI <- function(id, tabName) {
           # Rich Result upload panel
           tabPanel("Enrichment Results",
             br(),
-            fileInput(ns('rr_files'), 'File Input', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
+            fileInput(ns('rr_files'), 'Select files', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
             helpText("Accepted formats: .txt, .csv, .tsv"),
             selectInput(ns('rr_sep'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
             actionButton(ns('upload_rr_file'), "Upload")
           )
         ),
-        tabBox(title="Text input", id='text_upload', width=12,
+      ),
+      column(width = 4,
+        tabBox(title="Text input", id='text_upload', width=NULL,
           tabPanel("DEG Sets",
             br(),
             textAreaInput(ns('deg_text'), "Text Input", placeholder="Paste list of significant genes"),
@@ -34,28 +36,37 @@ uploadTabUI <- function(id, tabName) {
           )
         )
       ),
-      column(width = 8,
+      column(width = 4,
+        tabBox(title="Edit", id="edit_files", width=NULL,
+          tabPanel("Rename",
+            selectInput(ns("rename_deg_select"), "Select DEG set", choices=NULL, multiple=FALSE),
+            textInput(ns("new_deg_name"), "Name", placeholder="New DEG set name"),
+            # rename enrichment results
+            selectInput(ns("rename_rr_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
+            textInput(ns("new_rr_name"), "Name", placeholder="New enrichment result name"),
+            # rename cluster results
+            selectInput(ns("rename_clus_select"), "Select cluster result", choices=NULL, multiple=FALSE),
+            textInput(ns("new_clus_name"), "Name", placeholder="New cluster result name"),
+            br(),
+            actionButton(ns('rename_btn'), "Rename")
+          ),
+          tabPanel("Remove",
+            selectInput(ns("remove_deg_select"), "Select DEG sets to remove", choices=NULL, multiple=TRUE),
+            actionButton(ns("remove_deg"), "Remove selection"),
+            selectInput(ns("remove_rr_select"), "Select enrichment results to remove", choices=NULL, multiple=TRUE),
+            actionButton(ns("remove_rr"), "Remove selection"),
+            selectInput(ns("remove_clus_select"), "Select cluster results to remove", choices=NULL, multiple=TRUE),
+            actionButton(ns("remove_clus"), "Remove selection")
+          )
+        )
+      )
+    ),
         # Uploaded File View
         h3("File View"),
         tabsetPanel(
           # deg set view tab
+          br(),
           tabPanel("DEG Sets",
-            br(),
-            fluidRow(
-              column(6,
-                box(title = "Rename DEG sets", status = "primary", width = 12, collapsible = TRUE,
-                  selectInput(ns("rename_deg_select"), "Select DEG set", choices=NULL, multiple=FALSE),
-                  textInput(ns("new_deg_name"), "Name", placeholder="New name"),
-                  actionButton(ns("rename_deg"), "Update name")
-                )
-              ),
-              column(6,
-                box(title = "Remove DEG sets", status = "primary", width=12, collapsible = TRUE,
-                  selectInput(ns("remove_deg_select"), "Select DEG sets to remove", choices=NULL, multiple=TRUE),
-                  actionButton(ns("remove_deg"), "Remove selection")
-                )
-              )
-            ),
             box(title = "Table view/download", status = "primary", width=12,
               solidHeader = TRUE,
               fluidRow(
@@ -75,21 +86,6 @@ uploadTabUI <- function(id, tabName) {
           # rich result view tab
           tabPanel("Enrichment Results",
             br(),
-            fluidRow(
-              column(6,
-                box(title = "Rename enrichment results", status = "primary", width = 12, collapsible = TRUE,
-                  selectInput(ns("rename_rr_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
-                  textInput(ns("new_rr_name"), "Name", placeholder="New name"),
-                  actionButton(ns("rename_rr"), "Update name")
-                )
-              ),
-              column(6,
-                box(title = "Remove enrichment results", status = "primary", width=12, collapsible = TRUE,
-                  selectInput(ns("remove_rr_select"), "Select enrichment results to remove", choices=NULL, multiple=TRUE),
-                  actionButton(ns("remove_rr"), "Remove selection")
-                )
-              )
-            ),
             box(title = "Table view/download", status = "primary", width=12,
               solidHeader = TRUE,
               fluidRow(
@@ -109,21 +105,6 @@ uploadTabUI <- function(id, tabName) {
           # cluster result view tab
           tabPanel("Cluster Result",
            br(),
-           fluidRow(
-              column(6,
-                box(title = "Rename cluster results", status = "primary", width = 12, collapsible = TRUE,
-                  selectInput(ns("rename_clus_select"), "Select cluster result", choices=NULL, multiple=FALSE),
-                  textInput(ns("new_clus_name"), "Name", placeholder="New name"),
-                  actionButton(ns("rename_clus"), "Update name")
-                )
-              ),
-              column(6,
-                box(title = "Remove cluster results", status = "primary", width=12, collapsible = TRUE,
-                  selectInput(ns("remove_clus_select"), "Select cluster results to remove", choices=NULL, multiple=TRUE),
-                  actionButton(ns("remove_clus"), "Remove selection")
-                )
-              )
-           ),
            box(title = "Table view/download", status = "primary", width=12,
               solidHeader = TRUE,
               fluidRow(
@@ -141,8 +122,6 @@ uploadTabUI <- function(id, tabName) {
            )
           )
         )
-      )
-    )
   )
 }
 
@@ -238,20 +217,49 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       u_degnames$labels <- c(u_degnames$labels, lab)
     })
     
-    # when rename deg button clicked
-    observeEvent(input$rename_deg, {
-      req(input$rename_deg_select)
-      req(input$new_deg_name)
-      
+    
+    # when rename clicked
+    observeEvent(input$rename_btn, {
+      # rename deg
       new_name <- input$new_deg_name
       old_name <- input$rename_deg_select
+      if (nchar(new_name) > 0 && nchar(old_name) > 0) {
+        u_degnames$labels <- c(u_degnames$labels, new_name)
+        u_degnames$labels <- setdiff(u_degnames$labels, old_name) # remove old name
+        
+        u_degdfs[[new_name]] <- u_degdfs[[old_name]]
+        u_degdfs <- setdiff(names(u_degdfs), old_name)
+      }
       
-      u_degnames$labels <- c(u_degnames$labels, new_name)
-      u_degnames$labels <- setdiff(u_degnames$labels, old_name) # remove old name
+      # rename rr
+      new_name <- input$new_rr_name
+      old_name <- input$rename_rr_select
+      if (nchar(new_name) > 0 && nchar(old_name) > 0) {
+        u_rrnames$labels <- c(u_rrnames$labels, new_name)
+        u_rrnames$labels <- setdiff(u_rrnames$labels, old_name) # remove old name
+        
+        u_rrdfs[[new_name]] <- u_rrdfs[[old_name]]
+        u_rrdfs <- setdiff(names(u_rrdfs), old_name)
+      }
       
-      u_degdfs[[new_name]] <- u_degdfs[[old_name]]
-      u_degdfs <- setdiff(names(u_degdfs), old_name)
+      # rename clus
+      new_name <- input$new_clus_name
+      old_name <- input$rename_clus_select
+      if (nchar(new_name) > 0 && nchar(old_name) > 0) {
+        # update clusnames
+        u_clusnames$labels <- c(u_clusnames$labels, new_name)
+        u_clusnames$labels <- setdiff(u_clusnames$labels, old_name) # remove old name
+        
+        # update clusdfs
+        u_clusdfs[[new_name]] <- u_clusdfs[[old_name]]
+        u_clusdfs <- setdiff(names(u_clusdfs), old_name)
+        
+        # update cluslists
+        u_cluslists[[new_name]] <- u_cluslists[[old_name]]
+        u_cluslists <- setdiff(names(u_cluslists), old_name) 
+      }
     })
+    
     
     # when remove deg button clicked
     observeEvent(input$remove_deg, {
@@ -343,20 +351,6 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       
     })
     
-    # when rename rr button clicked
-    observeEvent(input$rename_rr, {
-      req(input$rename_rr_select)
-      req(input$new_rr_name)
-      
-      new_name <- input$new_rr_name
-      old_name <- input$rename_rr_select
-      
-      u_rrnames$labels <- c(u_rrnames$labels, new_name)
-      u_rrnames$labels <- setdiff(u_rrnames$labels, old_name) # remove old name
-      
-      u_rrdfs[[new_name]] <- u_rrdfs[[old_name]]
-      u_rrdfs <- setdiff(names(u_rrdfs), old_name)
-    })
     
     # when remove rr button clicked
     observeEvent(input$remove_rr, {
@@ -399,24 +393,6 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
     
     
     # <!----- CLUSTER RESULT LOGIC -----!>
-    # when rename cluster result button clicked
-    observeEvent(input$rename_clus, {
-      req(input$rename_clus_select)
-      req(input$new_clus_name)
-      
-      new_name <- input$new_clus_name
-      old_name <- input$rename_clus_select
-      
-      # update clusnames
-      u_clusnames$labels <- c(u_clusnames$labels, new_name)
-      u_clusnames$labels <- setdiff(u_clusnames$labels, old_name) # remove old name
-      # update clusdfs
-      u_clusdfs[[new_name]] <- u_clusdfs[[old_name]]
-      u_clusdfs <- setdiff(names(u_clusdfs), old_name)
-      # update cluslists
-      u_cluslists[[new_name]] <- u_cluslists[[old_name]]
-      u_cluslists <- setdiff(names(u_cluslists), old_name)
-    })
     
     # when remove cluster result button clicked
     observeEvent(input$remove_clus, {
