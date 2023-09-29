@@ -11,7 +11,7 @@ library(shiny)
 library(shinydashboard)
 library(tidyverse)
 library(tools)
-library(gtools)
+#library(gtools)
 library(readxl)
 library(data.table)
 library(ggplot2)
@@ -22,7 +22,7 @@ library(devtools)
 
 #install_github("guokai8/richR")
 library(richR)
-library(shinyHeatmaply)
+library(bioAnno)
 
 #SET WORKING DIRECTORY
 getwd()

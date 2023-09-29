@@ -1,9 +1,3 @@
-library(shiny)
-library(shinydashboard)
-
-source('deg_enrich.R')
-source('rr_makebar.R')
-
 
 enrichTabUI <- function(id, tabName) {
   ns <- NS(id)

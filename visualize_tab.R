@@ -1,9 +1,3 @@
-library(shiny)
-library(plotly)
-
-source('rr_cluster.R')
-source('make_heatmap.R')
-
 
 visualizeTabUI <- function(id, tabName) {
   ns <- NS(id)

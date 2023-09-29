@@ -1,9 +1,3 @@
-library(shiny)
-library(tools)
-library(readxl)
-library(readr)
-# add reset button
-# automatic column based on col name
 
 uploadTabUI <- function(id, tabName) {
   ns <- NS(id)

@@ -1,10 +1,3 @@
-library(shiny)
-library(shinydashboard)
-
-source('deg_enrich.R')
-source('rr_cluster.R')
-source('make_heatmap.R')
-
 
 clusterTabUI <- function(id, tabName) {
   ns <- NS(id)

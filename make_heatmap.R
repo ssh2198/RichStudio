@@ -1,8 +1,3 @@
-library(tidyverse)
-library(plotly)
-library(dplyr)
-
-
 
 # prepares the rich cluster result for heatmap
 hmap_prepare <- function(clustered_gs, gs_names) {
