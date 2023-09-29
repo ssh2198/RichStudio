@@ -166,9 +166,6 @@ append_df <- function(custom_data, gs) {
   common_cols <- intersect(colnames_cd, colnames_gs)
   cd_only_cols <- setdiff(colnames_cd, colnames_gs)
   
-  print(common_cols)
-  print(cd_only_cols)
-  
   # Add missing columns to gs
   gs[ , cd_only_cols] <- NA
   
@@ -271,6 +268,10 @@ custom_hmap <- function(custom_data, value_type) {
   colnames(subsetted_final_data) <- gsub(paste0("^", value_type, "_"), "", colnames(subsetted_final_data))
 
   melted_custom_data <- reshape2::melt(subsetted_final_data, id.vars = c("Term", "Annot", "GeneID"))
+  
+  melted_custom_data$value <- as.numeric(melted_custom_data$value)
+  melted_custom_data$value <- -log10(melted_custom_data$value)
+  melted_custom_data$value <- round(melted_custom_data$value, 4)
   
   my_nticks <- length(unique(melted_custom_data$Term))
   

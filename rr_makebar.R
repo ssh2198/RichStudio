@@ -73,7 +73,7 @@ rr_bar <- function(x, top=25, pvalue=0.05, value_type="Padj", view="rich") {
 
 rr_dot <- function(x, top=30, value_cutoff=0.05, value_type="Padj") {
   
-  x <- filter(x, x[, value_type]<pvalue) 
+  x <- filter(x, x[, value_type]<value_cutoff) 
   x <- arrange(x, value_type) # order by ascending padj/pval
   
   if (nrow(x) >= top) {
