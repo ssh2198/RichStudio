@@ -1,3 +1,5 @@
+# Function to enrich DEG sets
+
 
 # deg2 <- read.delim('/Users/sarahhong/Desktop/Hur Lab/enrichment-analysis/data/degs/HF_12wk_SCN_vs_WT_12wk_SCN_DE_12_19.txt')
 

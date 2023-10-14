@@ -135,7 +135,7 @@ enrichTabUI <- function(id, tabName) {
             br(),
             box(title="Enrichment Result Heatmap", status="info", width=NULL,
                 solidHeader = TRUE,
-                plotlyOutput(ns('rr_hmap')),
+                plotlyOutput(ns('rr_hmap'), height="800px")
             )
           )
         )

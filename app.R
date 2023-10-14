@@ -1,10 +1,5 @@
 #
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
+# Shiny web application for integrative enrichment analysis and visualization
 #
 
 library(shiny)
@@ -20,11 +15,10 @@ library(DT)
 library(devtools)
 library(config)
 
-#install_github("guokai8/richR")
 library(richR)
 library(bioAnno)
 
-#SET WORKING DIRECTORY
+#Set working directory
 getwd()
 library(rstudioapi)
 current_path <- getActiveDocumentContext()$path
@@ -32,15 +26,17 @@ setwd(dirname(current_path))
 base_dir = dirname(current_path)
 output = "output/"
 
-# CONFIG set working directory
+# Set working directory with config.yml (Fix later)
 # config_vars <- config::get("hurlab-server")
 # setwd(config_vars$project_directory)
 
-# SOURCE RELATED SCRIPTS
+# Source related scripts
 source('deg_enrich.R')
-source('rr_makebar.R')
+source('rr_bar.R')
+source('rr_dot.R')
 source('rr_cluster.R')
-source('make_heatmap.R')
+source('rr_hmap.R')
+source('cluster_hmap.R')
 
 source('upload_tab.R')
 source('update_tab.R')
@@ -49,7 +45,6 @@ source('cluster_tab.R')
 
 
 ui <- dashboardPage(
-  
   dashboardHeader(title = "RichStudio"),
   dashboardSidebar(
     sidebarMenu(
@@ -81,13 +76,11 @@ ui <- dashboardPage(
       )
     )
   )
-  
 )
 
 
 server <- function(input, output) {
-  
-  # DYNAMIC DEG / RICH RESULT / CLUSTER LISTS
+  # Create reactive values for DEG sets, enrichment, and cluster results
   u_degnames <- reactiveValues(labels=NULL)  # uploaded deg names
   u_degdfs <- reactiveValues()  # uploaded deg dataframes
   u_rrnames <- reactiveValues(labels=NULL)  # rich result names
@@ -96,7 +89,7 @@ server <- function(input, output) {
   u_clusdfs <- reactiveValues()  # cluster result dataframes
   u_cluslists <- reactiveValues()  # cluster info lists
   
-  # SERVER LOGIC
+  # Server logic
   uploadTabServer("upload", u_degnames=u_degnames, u_degdfs=u_degdfs, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
                   u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)

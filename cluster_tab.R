@@ -39,7 +39,7 @@ clusterTabUI <- function(id, tabName) {
             ),
             br(),
             box(title = "Cluster Heatmap", status = "info", width = NULL, solidHeader = TRUE,
-              plotlyOutput(ns('clusdf_hmap'))
+              plotlyOutput(ns('clusdf_hmap'), height="800px")
             ),
             br(),
             # Term heatmap

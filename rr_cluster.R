@@ -1,5 +1,7 @@
+# Functions to merge and cluster enrichment results
 
-# SAMPLE GENESETS
+
+# Sample genesets
 # gs1 <- read.delim("data/try-this/GO_HF12wk_vs_WT12wk.txt")
 # gs2 <- read.delim("data/try-this/KEGG_HF36wk_vs_WT12wk.txt")
 # gs3 <- read.delim("data/try-this/GO_WT36wk_vs_WT12wk.txt")
@@ -9,7 +11,7 @@
 # gs_names <- c("GO_HF12wk_vs_WT12wk.txt", "KEGG_HF36wk_vs_WT12wk.txt", "GO_WT36wk_vs_WT12wk.txt")
 
 
-# this function merges a list of genesets together to prepare for clustering
+# Merges a list of genesets together to prepare for clustering
 merge_genesets <- function(genesets) {
   
   # suffix all non 'Term' columns with their index
@@ -70,7 +72,7 @@ merge_genesets <- function(genesets) {
   
 }
 
-# clusters the merged geneset
+# Clusters the merged geneset
 cluster <- function(merged_gs, cutoff, overlap, minSize) {
   
   tryCatch({
@@ -90,7 +92,7 @@ cluster <- function(merged_gs, cutoff, overlap, minSize) {
 }
 
 
-# return list of terms & corresponding pvalues, padjs, geneIDs for each cluster
+# Return list of terms & corresponding Pvalues, Padjs, GeneIDs for each cluster
 get_cluster_list <- function(clustered_gs, merged_gs, gs_names) {
   
   # get list of Annots in cluster, index=cluster#
