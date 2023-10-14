@@ -1,2 +1,2 @@
-# enrichment-analysis
-R Shiny app for enrichment analysis
+# RichStudio
+R Shiny app for integrative enrichment analysis and visualization
