@@ -33,6 +33,7 @@ output = "output/"
 # Source related scripts
 source('deg_enrich.R')
 source('rr_column_handling.R')
+source('round_table.R')
 source('rr_bar.R')
 source('rr_dot.R')
 source('rr_cluster.R')

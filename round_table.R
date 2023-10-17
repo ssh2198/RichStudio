@@ -2,30 +2,27 @@
 library(knitr)
 
 
-n_dec <- function(x) {
-  x <- unlist(strsplit(as.character(x), "\\."))
-  x <- unlist(strsplit(x[2], ""))
-  count <- 0
-  for (i in seq_along(x)) {
-    count <- count+1
-  }
-  return(count)
-}
+# n_dec <- function(x) {
+#   x <- unlist(strsplit(as.character(x), "\\."))
+#   x <- unlist(strsplit(x[2], ""))
+#   count <- 0
+#   for (i in seq_along(x)) {
+#     count <- count+1
+#   }
+#   return(count)
+# }
 
 format_cells <- function(x, n) {
-  if (is.numeric(x) && !is.na(x)) {
-    if (as.numeric(x) < 1e-5 || as.numeric(x) > 1e+5) {
-      return(format(x, scientific=TRUE, digits=n))
-    } else {
-      # tmp <- signif(as.numeric(x), digits=n)
-      # n <- n_dec(tmp)
-      # return(format(x, scientific=FALSE, digits=n))
-      #return(format(signif(x, digits=n), scientific=FALSE))
-      return(signif(as.numeric(x), digits=n))
-      #return(as.numeric(sprintf(paste0("%.", n, "f"), as.numeric(x))))
-    }
+  if (abs(x) < 1e-5 || abs(x) > 1e+5) {
+    #return(format(x, scientific=TRUE, digits=n))
+    return(sprintf(paste0("%.", n, "e"), x))
   } else {
-    return(x) # Don't change non-numeric cells
+    # tmp <- signif(as.numeric(x), digits=n)
+    # n <- n_dec(tmp)
+    # return(format(x, scientific=FALSE, digits=n))
+    #return(format(signif(x, digits=n), scientific=FALSE))
+    return(signif(x, digits=n))
+    #return(as.numeric(sprintf(paste0("%.", n, "f"), as.numeric(x))))
   }
 }
 
@@ -34,7 +31,7 @@ round_tbl <- function(df, n) {
     for (j in 1:ncol(df)) {
       suppressWarnings({
         if ( !is.na(df[i, j]) && !is.na(as.numeric(df[i, j])) ) {
-          df[i, j] <- format_cells(as.numeric(df[i, j]), n)
+          df[i, j] <- as.character(format_cells(as.numeric(df[i, j]), n))
         }
       })
     }
@@ -43,11 +40,11 @@ round_tbl <- function(df, n) {
 }
 
 # Try
-# x2 <- read.delim("data/clustered_data.txt")
-# x2 <- round_tbl(x2, 4)
-# 
-# df <- read.delim("data/try-this/GO_HF12wk_vs_WT12wk.txt")
-# df <- round_tbl(df, 4)
+x2 <- read.delim("data/clustered_data.txt")
+x2 <- round_tbl(x2, 3)
+
+df <- read.delim("data/try-this/GO_HF12wk_vs_WT12wk.txt")
+df <- round_tbl(df, 3)
 
 
 

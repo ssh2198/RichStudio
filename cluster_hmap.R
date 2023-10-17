@@ -187,8 +187,8 @@ cluster_hmap <- function(cluster_list, term_vec, final_data, value_type="Padj") 
   #                   theme = theme(plot.title = element_text(hjust = 0.5))) +  
   #   plot_layout(guides = "collect")
   # 
-  # 
-  # # Todo: Prepare dataframe for cluster row annotations 
+  #
+  # # ComplexHeatmap/tidyHeatmap
   # clusty <- melted_chmap_data %>%
   #   distinct(Cluster, Term) %>%
   #   arrange(Cluster)

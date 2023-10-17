@@ -50,7 +50,7 @@ select_required_columns <- function(df) {
   
   matched_columns <- sapply(names(expanded_col_dictionary), function(required) {
     potential_matches <- expanded_col_dictionary[[required]]
-    found_cols <- intersect(names(df), potential_matches)
+    found_cols <- base::intersect(names(df), potential_matches)
     
     if (length(found_cols) == 1) {
       return(found_cols)
