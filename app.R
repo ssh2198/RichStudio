@@ -15,6 +15,8 @@ library(DT)
 library(devtools)
 library(config)
 
+library(ComplexHeatmap)
+
 library(richR)
 library(bioAnno)
 

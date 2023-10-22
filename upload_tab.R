@@ -245,7 +245,8 @@ uploadTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
           }
         }
         
-        u_rrdfs[[lab]] <- select_required_columns(df) # set u_rrdfs
+        #u_rrdfs[[lab]] <- select_required_columns(df) # set u_rrdfs
+        u_rrdfs[[lab]] <- df # set u_rrdfs
         u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
       }
       

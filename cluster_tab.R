@@ -179,9 +179,9 @@ clusterTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clu
       
       hmap <- cluster_hmap(cluster_list=cluslist_df, term_vec=input$indiv_clus_select, 
                            final_data=df, value_type=input$small_value_type)
-      
       return(hmap)
     })
+    
     output$indiv_clus_hmap <- renderPlotly({
       plot_cluslist_hmap()
     })
