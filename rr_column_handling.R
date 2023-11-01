@@ -69,7 +69,7 @@ select_required_columns <- function(df) {
   
   # Subset the dataframe based on matched columns
   df_selected <- df %>%
-    select(all_of(matched_columns[!is.na(matched_columns)]))
+    dplyr::select(all_of(matched_columns[!is.na(matched_columns)]))
   
   # Add columns that couldn't be matched as empty columns
   for(col in names(matched_columns)[is.na(matched_columns)]) {
@@ -87,7 +87,7 @@ select_required_columns <- function(df) {
 
 
 # Example
-# user_df <- data.frame(identifier = 1:5, name = letters[1:5], Pvalue = runif(5), 
+# user_df <- data.frame(name = letters[1:5], Pvalue = runif(5),
 #                       `Q-value` = runif(5), `gene list` = paste(sample(letters, 5), collapse = ","))
 # result_df <- select_required_columns(user_df)
 # print(result_df)

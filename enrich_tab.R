@@ -85,6 +85,27 @@ enrichTabUI <- function(id, tabName) {
             )
           ),
           
+          # Network
+          tabPanel("Network",
+            box(title="Network", width=NULL, status='primary', collapsible=TRUE,
+              br(),
+              selectInput(ns('select_net'), "Select enrichment result to view", choices=NULL, multiple=FALSE),
+              fluidRow(
+                column(4,
+                  selectInput(ns('net_valtype'), "View Padj or Pvalue?", choices=c("Padj", "Pvalue"), multiple=FALSE)
+                ),
+                column(4,
+                  numericInput(ns("net_cutoff"), "P-value cutoff", value=0.05, min=0, max=1)
+                )
+              ),
+              sliderInput(ns("net_nterms"), "Number of terms to display", value=25, min=0, max=100)
+            ),
+            box(title='Network', width=NULL, status='info', solidHeader=TRUE,
+              br(),
+              plotlyOutput(ns("network"))
+            )
+          ),
+          
           # Heatmap
           tabPanel("Heatmap",
             tabBox(title = "Edit Heatmap", id="edit_hmap_box", width = NULL,
@@ -174,6 +195,7 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       updateSelectInput(session=getDefaultReactiveDomain(), 'selected_degs', choices=u_degnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'select_bar', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'select_dot', choices=u_rrnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'select_net', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'select_table', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'ez_add_select', choices=u_rrnames_reactive())
       updateSelectInput(session=getDefaultReactiveDomain(), 'rr_add_select', choices=u_rrnames_reactive())
@@ -219,6 +241,16 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clus
       df <- u_rrdfs[[input$select_dot]]
       mydot <- rr_dot(x=df, top=input$dot_nterms, value_cutoff=input$dot_cutoff, value_type=input$dot_valtype)
       return(mydot)
+    })
+    output$dotplot <- renderPlotly ({
+      get_rr_dotplot()
+    })
+    
+    get_rr_network <- reactive ({
+      req(input$select_net)
+      df <- u_rrdfs[[input$select_net]]
+      mynet <- rr_network(rr=df, deg=NULL)
+      return(mynet)
     })
     output$dotplot <- renderPlotly ({
       get_rr_dotplot()

@@ -21,16 +21,19 @@ library(richR)
 library(bioAnno)
 
 #Set working directory
-getwd()
-library(rstudioapi)
-current_path <- getActiveDocumentContext()$path
-setwd(dirname(current_path))
-base_dir = dirname(current_path)
-output = "output/"
+# getwd()
+# library(rstudioapi)
+# current_path <- getActiveDocumentContext()$path
+# setwd(dirname(current_path))
+# base_dir = dirname(current_path)
+# output = "output/"
 
 # Set working directory with config.yml (Fix later)
-# config_vars <- config::get("hurlab-server")
-# setwd(config_vars$project_directory)
+config_vars <- config::get("hurlab-server")
+print(config_vars$project_directory)
+setwd(config_vars$project_directory)
+
+options(shiny.error = browser)
 
 # Source related scripts
 source('deg_enrich.R')
@@ -38,6 +41,7 @@ source('rr_column_handling.R')
 source('round_table.R')
 source('rr_bar.R')
 source('rr_dot.R')
+source('rr_network.R')
 source('rr_cluster.R')
 source('rr_hmap.R')
 source('cluster_hmap.R')
