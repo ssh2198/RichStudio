@@ -6,5 +6,5 @@ rr_network <- function(rr, deg) {
   return(ggnetwork(rr))
 }
 
-net1 <- ggnetwork(deg1_enriched, weightcut=.2)
-net2 <- ggnetwork(deg1_enriched, weightcut=.5)
+# net1 <- ggnetwork(deg1_enriched, weightcut=.2)
+# net2 <- ggnetwork(deg1_enriched, weightcut=.5)
