@@ -1,29 +1,31 @@
-# Testing ComplexHeatmap for cluster row annotations
+# # Testing ComplexHeatmap for cluster row annotations
+# 
+# library(ComplexHeatmap)
+# library(InteractiveComplexHeatmap)
+# 
+# clusty_annot <- melted_chmap_data %>%
+#   distinct(Cluster, Term) %>%
+#   arrange(Cluster)
+# 
+# clusty <- cluster_hmap[, !(colnames(cluster_hmap) %in% c("Cluster", "Term"))]
+# clusty <- apply(clusty, c(1, 2), function(x) -log10(x))
+# clusty <- apply(clusty, 2, function(x) replace_na(x, 0))
+# 
+# 
+# col_fun <- colorRamp2(c(0, max(melted_chmap_data$value, na.rm=TRUE)), c("white", "purple"))
+# #col_fun(seq(-3, 3))
+# 
+# rownames(clusty) <- cluster_hmap$Term
+# la <- ComplexHeatmap::rowAnnotation(Cluster=clusty_annot$Cluster, name="Cluster", show_annotation_name=TRUE)
+# ch <- ComplexHeatmap::Heatmap(as.matrix(clusty), name="Test", col=col_fun, cluster_rows=FALSE, 
+#                               cluster_columns=FALSE, left_annotation=la)
+# 
+# ch <- draw(ch)
+# htShiny(ch)
 
-library(ComplexHeatmap)
-library(InteractiveComplexHeatmap)
-
-clusty_annot <- melted_chmap_data %>%
-  distinct(Cluster, Term) %>%
-  arrange(Cluster)
-
-clusty <- cluster_hmap[, !(colnames(cluster_hmap) %in% c("Cluster", "Term"))]
-clusty <- apply(clusty, c(1, 2), function(x) -log10(x))
-clusty <- apply(clusty, 2, function(x) replace_na(x, 0))
 
 
-col_fun <- colorRamp2(c(0, max(melted_chmap_data$value, na.rm=TRUE)), c("white", "purple"))
-#col_fun(seq(-3, 3))
-
-rownames(clusty) <- cluster_hmap$Term
-la <- ComplexHeatmap::rowAnnotation(Cluster=clusty_annot$Cluster, name="Cluster", show_annotation_name=TRUE)
-ch <- ComplexHeatmap::Heatmap(as.matrix(clusty), name="Test", col=col_fun, cluster_rows=FALSE, 
-                              cluster_columns=FALSE, left_annotation=la)
-
-ch <- draw(ch)
-htShiny(ch)
-
-
+# ignore from here on...
 # diff_la = rowAnnotation(Cluster=anno_empty(border = FALSE, 
 #                                       width =  unit(60, "mm")))
 # diff_ch <- ComplexHeatmap::Heatmap(as.matrix(clusty), name="Test", col=col_fun, cluster_rows=FALSE, 
