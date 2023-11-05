@@ -1,4 +1,4 @@
-# Toy example for heatmaply with explicit column display
+# # Toy example for heatmaply with explicit column display
 # library(heatmaply)
 # 
 # # Define input data
