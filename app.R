@@ -30,6 +30,7 @@ library(bioAnno)
 
 # Set working directory with config.yml (Fix later)
 config_vars <- config::get("hurlab-server")
+print(config_vars$project_directory)
 setwd(config_vars$project_directory)
 
 options(shiny.error = browser)
