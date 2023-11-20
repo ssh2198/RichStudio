@@ -44,6 +44,7 @@ source('rr_cluster.R')
 source('rr_hmap.R')
 source('cluster_hmap.R')
 
+source('home_tab.R')
 source('upload_tab.R')
 source('update_tab.R')
 source('enrich_tab.R')
@@ -54,6 +55,7 @@ ui <- dashboardPage(
   dashboardHeader(title = "RichStudio v0.1.0"),
   dashboardSidebar(
     sidebarMenu(
+      menuItem("Home", icon=icon("house"), tabName="home_tab"),
       menuItem("Upload", icon = icon("plus"), tabName = "upload_tab",
         menuSubItem("Upload files", icon=icon("upload"), tabName="upload_files"),
         menuSubItem("Rename/remove files", icon=icon("pencil"), tabName="update_files")
@@ -65,6 +67,7 @@ ui <- dashboardPage(
   
   dashboardBody(
     tabItems(
+      homeTabUI("home", tabName="home_tab"),
       uploadTabUI("upload", tabName="upload_files"),
       updateTabUI("update", tabName="update_files"),
       enrichTabUI("enrich", tabName="enrich_tab"),
@@ -96,6 +99,7 @@ server <- function(input, output) {
   u_cluslists <- reactiveValues()  # cluster info lists
   
   # Server logic
+  homeTabServer("home")
   uploadTabServer("upload", u_degnames=u_degnames, u_degdfs=u_degdfs, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
                   u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
