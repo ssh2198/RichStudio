@@ -31,12 +31,8 @@ add_file_degdf <- function(df, name, new_df) {
   }
 }
 
-rm_file_degdf <- function(df, df_name_to_rm) {
-  if (!is.atomic(df)) {
-    df <- df[df$name != df_name_to_rm, ]
-    print("Does this work?")
-  } else {
-    df <- NULL
-  }
+rm_file_degdf <- function(df, rm_vec) {
+  #df <- df[df %!in% rm_vec]
+  df <- df[-which(df$name %in% rm_vec$name), ]
   return(df)
 }

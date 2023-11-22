@@ -27,7 +27,7 @@ uploadDegTabUI <- function(id, tabName) {
           actionButton(ns('remove_btn'), "Delete")
         ))
       ), 
-      box(title="Preview DEG sets", status="primary", solidHeader=TRUE, width=NULL,
+      box(title="View DEG sets", status="primary", solidHeader=TRUE, width=NULL,
         fluidRow(
           column(4,
             selectInput(ns('deg_table_select'), "Select DEG set", choices=NULL),
@@ -169,16 +169,22 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs) {
     # Remove deg from uploaded degs
     observeEvent(input$remove_btn, {
       req(input$deg_list_table_rows_selected)
+      
+      # Remove selection from u_big_degdf
+      rm_vec <- u_big_degdf$df[input$deg_list_table_rows_selected, ]
+      u_big_degdf$df <- rm_file_degdf(u_big_degdf$df, rm_vec)
+      
+      # Also remove from degdfs and degnames
       for (deg in input$deg_list_table_rows_selected) {
         deg_to_rm <- u_big_degdf$df[deg, ]
         deg_to_rm <- deg_to_rm$name
         
-        # Remove from big deglist
-        u_big_degdf$df <- rm_file_degdf(u_big_degdf$df, deg_to_rm)
-        
-        # Remove from degdfs and degnames
         u_degdfs <- setdiff(names(u_degdfs), deg_to_rm)
         u_degnames$labels <- setdiff(u_degnames$labels, deg_to_rm)
+      }
+      if (is.null(u_big_degdf$df)) {
+        shinyjs::hide("deglist_box")
+        print("hide")
       }
     })
     
