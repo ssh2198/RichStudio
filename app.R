@@ -4,6 +4,7 @@
 
 library(shiny)
 library(shinydashboard)
+library(shinyjs)
 library(tidyverse)
 library(tools)
 library(readxl)
@@ -20,18 +21,18 @@ library(richR)
 library(bioAnno)
 
 #Set working directory
-# getwd()
-# library(rstudioapi)
-# current_path <- getActiveDocumentContext()$path
-# setwd(dirname(current_path))
-# base_dir = dirname(current_path)
-# output = "output/"
+getwd()
+library(rstudioapi)
+current_path <- getActiveDocumentContext()$path
+setwd(dirname(current_path))
+base_dir = dirname(current_path)
+output = "output/"
 
 # Set working directory with config.yml (Fix later)
-config_vars <- config::get("hurlab-server")
-setwd(config_vars$project_directory)
-
-options(shiny.error = browser)
+# config_vars <- config::get("hurlab-server")
+# setwd(config_vars$project_directory)
+# 
+# options(shiny.error = browser)
 
 # Source related scripts
 source("file_handling.R")
@@ -93,7 +94,8 @@ ui <- dashboardPage(
       ),
       tags$link(
         rel = "stylesheet", type = "text/css", href = "custom.css"
-      )
+      ),
+      tags$script(HTML("shinyjs.init();"))
     )
   )
 )

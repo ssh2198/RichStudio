@@ -3,25 +3,10 @@ uploadDegTabUI <- function(id, tabName) {
   ns <- NS(id)
   tabItem(tabName = tabName,
     # UPLOAD TAB CONTENTS
+    useShinyjs(),
     column(width = 4,
       fluidRow( 
-        # tabBox(title=span(icon("upload"), "File upload"), id='upload_box', width=NULL,
-        #   # DEG upload panel
-        #   tabPanel("DEG Sets",
-        #     fileInput(ns('deg_files'), 'Select files', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
-        #     helpText("Accepted formats: .txt, .csv, .tsv")
-        #     #selectInput(ns('deg_sep'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
-        #     #actionButton(ns('upload_deg_file'), "Upload")
-        #   ),
-        #   # Rich Result upload panel
-        #   tabPanel("Enrichment Results",
-        #     fileInput(ns('rr_files'), 'Select files', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
-        #     helpText("Accepted formats: .txt, .csv, .tsv"),
-        #     #selectInput(ns('rr_sep'), "Element separator", c(Comma=",", Space=" ", Tab="\t", "Guess"), selected="Guess"),
-        #     #actionButton(ns('upload_rr_file'), "Upload")
-        #   )
-        # ),
-        box(title=span(icon("upload"), "File upload"), status="primary", solidHeader=TRUE, width=NULL,
+          box(title=span(icon("upload"), "File upload"), status="primary", solidHeader=TRUE, width=NULL,
           helpText("Accepted formats: .txt, .csv, .tsv"),      
           fileInput(ns('deg_files'), 'Select files', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
         )
@@ -35,25 +20,13 @@ uploadDegTabUI <- function(id, tabName) {
       ),
     ),
     column(width = 8,
-      #   column(width=6,
-      #     box(title="Rename", status="primary", solidHeader=TRUE, width=NULL,
-      #       selectInput(ns("rename_deg_select"), "Select DEG set", choices=NULL, multiple=FALSE),
-      #       textInput(ns("new_deg_name"), "Name", placeholder="New DEG set name"),
-      #       br(),
-      #       actionButton(ns('rename_btn'), "Rename")
-      #     )
-      #   ),
-      #   column(width=6,
-      #     box(title="Delete", status="primary", solidHeader=TRUE, width=NULL,
-      #       selectInput(ns("remove_deg_select"), "Select DEG sets to remove", choices=NULL, multiple=TRUE),
-      #       br(),
-      #       actionButton(ns('remove_btn'), "Remove selection")
-      #     )
-      #   )
-      # ),
-      box(title="Uploaded files", status="primary", solidHeader=TRUE, width=NULL,
-        DT::DTOutput(ns('deg_list_table'))
-      ),
+      shinyjs::hidden(tags$div(
+        id=ns("deglist_box"),
+        box(title="Uploaded files", status="primary", solidHeader=TRUE, width=NULL,
+          DT::DTOutput(ns('deg_list_table')),
+          actionButton(ns('remove_btn'), "Delete")
+        ))
+      ), 
       box(title="Preview DEG sets", status="primary", solidHeader=TRUE, width=NULL,
         fluidRow(
           column(4,
@@ -77,7 +50,6 @@ uploadDegTabUI <- function(id, tabName) {
 uploadDegTabServer <- function(id, u_degnames, u_degdfs) {
   
   moduleServer(id, function(input, output, session) {
-    
     # create reactive objs to make accessible in other modules
     u_degnames_reactive <- reactive(u_degnames$labels) 
     u_degdfs_reactive <- reactive(u_degdfs)
@@ -87,8 +59,18 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs) {
     
     # update select inputs based on # file inputs
     observe({
-      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices=u_degnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices= u_big_degdf$df$name)
     })
+    
+    # observe({
+    #   if (is.null(u_big_degdf$df)) {
+    #     shinyjs::hide("deglist_box")
+    #     print("hide")
+    #   } else {
+    #     shinyjs::show("deglist_box")
+    #     print("show")
+    #   }
+    # })
     
     # when deg upload button clicked
     observeEvent(input$deg_files, {
@@ -123,6 +105,12 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs) {
         u_big_degdf$df <- add_file_degdf(u_big_degdf$df, lab, df)
       }
       
+      # Show file list
+      if (!is.null(u_big_degdf)) {
+        shinyjs::show("deglist_box")
+        print("showing...")
+      }
+      
     })
     
     # Parse pasted text inputs
@@ -136,6 +124,13 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs) {
       u_degdfs[[lab]] <- df # set u_degdfs
       u_degnames$labels <- c(u_degnames$labels, lab)
       u_big_degdf$df <- add_file_degdf(u_big_degdf$df, lab, df)
+      
+      # Show file list
+      if (!is.null(u_big_degdf)) {
+        shinyjs::show("deglist_box")
+        print("showing...")
+      }
+      
     })
 
     # Reactively update uploaded file dataframe
@@ -154,8 +149,37 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs) {
       i = info$row
       j = info$col
       v = info$value
+      
+      # rename deg
+      new_name <- v
+      old_name <- u_big_degdf$df[i, j]
+      if (nchar(new_name) > 0 && nchar(old_name) > 0) {
+        u_degnames$labels <- c(u_degnames$labels, new_name)
+        u_degnames$labels <- setdiff(u_degnames$labels, old_name) # remove old name
+        
+        u_degdfs[[new_name]] <- u_degdfs[[old_name]]
+        u_degdfs <- setdiff(names(u_degdfs), old_name)
+      }
+      
       u_big_degdf$df[i, j] <<- DT::coerceValue(v, u_big_degdf$df[i, j])
       #replaceData(proxy, x, resetPaging = FALSE)  # important
+      #u_degdfs[[lab]] <- #TODO LATER: update names in u_degdfs
+    })
+    
+    # Remove deg from uploaded degs
+    observeEvent(input$remove_btn, {
+      req(input$deg_list_table_rows_selected)
+      for (deg in input$deg_list_table_rows_selected) {
+        deg_to_rm <- u_big_degdf$df[deg, ]
+        deg_to_rm <- deg_to_rm$name
+        
+        # Remove from big deglist
+        u_big_degdf$df <- rm_file_degdf(u_big_degdf$df, deg_to_rm)
+        
+        # Remove from degdfs and degnames
+        u_degdfs <- setdiff(names(u_degdfs), deg_to_rm)
+        u_degnames$labels <- setdiff(u_degnames$labels, deg_to_rm)
+      }
     })
     
     # Reactively update which deg table is read based on selection

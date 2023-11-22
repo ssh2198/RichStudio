@@ -1,9 +1,9 @@
 # Functions to create uploaded file dataframe
 
-df <- data.frame() # for testing
-new_df <- read.delim("data/degs/HF_12wk_DRG_vs_WT_12wk_DRG_DE_12_19.txt")
-name <- "HF_12wk_DRG_vs_WT_12wk_DRG_DE_12_19.txt"
-df <- add_file_degdf(df, name, new_df)
+# df <- data.frame() # for testing
+# new_df <- read.delim("data/degs/HF_12wk_DRG_vs_WT_12wk_DRG_DE_12_19.txt")
+# name <- "HF_12wk_DRG_vs_WT_12wk_DRG_DE_12_19.txt"
+# df <- add_file_degdf(df, name, new_df)
 
 add_file_degdf <- function(df, name, new_df) {
   possible_geneID <- c("GeneID", "gene_id", "gene", "gene list") # Possible "GeneID" colnames
@@ -33,7 +33,8 @@ add_file_degdf <- function(df, name, new_df) {
 
 rm_file_degdf <- function(df, df_name_to_rm) {
   if (!is.atomic(df)) {
-    df <- df[df$name != df_name_to_rm]
+    df <- df[df$name != df_name_to_rm, ]
+    print("Does this work?")
   } else {
     df <- NULL
   }
