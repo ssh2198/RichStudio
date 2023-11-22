@@ -171,19 +171,21 @@ enrichTabUI <- function(id, tabName) {
 }
 
 
-enrichTabServer <- function(id, u_degnames, u_degdfs, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u_cluslists) {
+enrichTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_rrdfs, u_clusnames, u_clusdfs, u_cluslists) {
   
   moduleServer(id, function(input, output, session) {
     
-    # create reactive objs to make accessible in other modules
+    # Global reactive objects
     u_degnames_reactive <- reactive(u_degnames$labels) 
     u_degdfs_reactive <- reactive(u_degdfs) 
+    u_big_degdf_reactive <- reactive(u_big_degdf)
     u_rrnames_reactive <- reactive(u_rrnames$labels) 
     u_rrdfs_reactive <- reactive(u_rrdfs)
     u_clusnames_reactive <- reactive(u_clusnames$labels)
     u_clusdfs_reactive <- reactive(u_clusdfs)
     u_cluslists_reactive <- reactive(u_cluslists)
     
+    # Local reactive objects
     rr_custom_list_reactive <- reactiveValues(labels=NULL)
     rr_term_vec_reactive <- reactiveValues()
     custom_data_reactive <- reactiveValues(df = data.frame())

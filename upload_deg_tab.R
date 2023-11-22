@@ -47,7 +47,7 @@ uploadDegTabUI <- function(id, tabName) {
 }
 
 
-uploadDegTabServer <- function(id, u_degnames, u_degdfs) {
+uploadDegTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf) {
   
   moduleServer(id, function(input, output, session) {
     # create reactive objs to make accessible in other modules
@@ -55,22 +55,12 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs) {
     u_degdfs_reactive <- reactive(u_degdfs)
     
     # create reactive to store dataframe of uploaded files
-    u_big_degdf <- reactiveValues(df = data.frame())
+    u_big_degdf <- reactiveValues(df=data.frame())
     
     # update select inputs based on # file inputs
     observe({
       updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices= u_big_degdf$df$name)
     })
-    
-    # observe({
-    #   if (is.null(u_big_degdf$df)) {
-    #     shinyjs::hide("deglist_box")
-    #     print("hide")
-    #   } else {
-    #     shinyjs::show("deglist_box")
-    #     print("show")
-    #   }
-    # })
     
     # when deg upload button clicked
     observeEvent(input$deg_files, {
@@ -149,30 +139,27 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs) {
       i = info$row
       j = info$col
       v = info$value
+      print(info$col)
       
-      # rename deg
-      new_name <- v
-      old_name <- u_big_degdf$df[i, j]
-      if (nchar(new_name) > 0 && nchar(old_name) > 0) {
-        u_degnames$labels <- c(u_degnames$labels, new_name)
-        u_degnames$labels <- setdiff(u_degnames$labels, old_name) # remove old name
-        
-        u_degdfs[[new_name]] <- u_degdfs[[old_name]]
-        u_degdfs <- setdiff(names(u_degdfs), old_name)
+      # Rename deg if changing a value in column 1 (name col)
+      if (info$col == 1) {
+        new_name <- v
+        old_name <- u_big_degdf$df[i, j]
+        if (nchar(new_name) > 0 && nchar(old_name) > 0) {
+          u_degnames$labels <- c(u_degnames$labels, new_name)
+          u_degnames$labels <- setdiff(u_degnames$labels, old_name) # remove old name
+          
+          u_degdfs[[new_name]] <- u_degdfs[[old_name]]
+          u_degdfs <- setdiff(names(u_degdfs), old_name)
+        }
       }
       
       u_big_degdf$df[i, j] <<- DT::coerceValue(v, u_big_degdf$df[i, j])
-      #replaceData(proxy, x, resetPaging = FALSE)  # important
-      #u_degdfs[[lab]] <- #TODO LATER: update names in u_degdfs
     })
     
     # Remove deg from uploaded degs
     observeEvent(input$remove_btn, {
       req(input$deg_list_table_rows_selected)
-      
-      # Remove selection from u_big_degdf
-      rm_vec <- u_big_degdf$df[input$deg_list_table_rows_selected, ]
-      u_big_degdf$df <- rm_file_degdf(u_big_degdf$df, rm_vec)
       
       # Also remove from degdfs and degnames
       for (deg in input$deg_list_table_rows_selected) {
@@ -182,6 +169,11 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs) {
         u_degdfs <- setdiff(names(u_degdfs), deg_to_rm)
         u_degnames$labels <- setdiff(u_degnames$labels, deg_to_rm)
       }
+      
+      # Remove selection from u_big_degdf
+      rm_vec <- u_big_degdf$df[input$deg_list_table_rows_selected, ]
+      u_big_degdf$df <- rm_file_degdf(u_big_degdf$df, rm_vec)
+      
       if (is.null(u_big_degdf$df)) {
         shinyjs::hide("deglist_box")
         print("hide")

@@ -105,8 +105,11 @@ server <- function(input, output) {
   # Create reactive values for DEG sets, enrichment, and cluster results
   u_degnames <- reactiveValues(labels=NULL)  # uploaded deg names
   u_degdfs <- reactiveValues()  # uploaded deg dataframes
+  u_big_degdf <- reactiveValues(df=NULL) # list of uploaded degs with info
+  
   u_rrnames <- reactiveValues(labels=NULL)  # rich result names
   u_rrdfs <- reactiveValues()  # rich result dataframes
+  
   u_clusnames <- reactiveValues(labels=NULL)  # cluster result names
   u_clusdfs <- reactiveValues()  # cluster result dataframes
   u_cluslists <- reactiveValues()  # cluster info lists
@@ -119,10 +122,11 @@ server <- function(input, output) {
   updateTabServer("update", u_degnames=u_degnames, u_degdfs=u_degdfs, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
                   u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
-  uploadDegTabServer("upload_deg", u_degnames=u_degnames, u_degdfs=u_degdfs)
-  enrichTabServer("enrich", u_degnames=u_degnames, u_degdfs=u_degdfs, 
+  uploadDegTabServer("upload_deg", u_degnames=u_degnames, u_degdfs=u_degdfs, u_big_degdf=u_big_degdf)
+  enrichTabServer("enrich", u_degnames=u_degnames, u_degdfs=u_degdfs, u_big_degdf=u_big_degdf$df, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
                   u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
+  #uploadRichTabServer()
   clusterTabServer("cluster", u_degnames=u_degnames, u_degdfs=u_degdfs, 
                    u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
                    u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)

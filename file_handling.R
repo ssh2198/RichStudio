@@ -6,6 +6,11 @@
 # df <- add_file_degdf(df, name, new_df)
 
 add_file_degdf <- function(df, name, new_df) {
+  # Don't add if name already in df
+  if (name %in% df$name) {
+    return(df)
+  }
+  
   possible_geneID <- c("GeneID", "gene_id", "gene", "gene list") # Possible "GeneID" colnames
   geneIDmatches <- grep(paste(possible_geneID, collapse="|"), colnames(new_df), ignore.case=TRUE)
   
