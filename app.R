@@ -64,8 +64,8 @@ ui <- dashboardPage(
       #   menuSubItem("Rename/remove files", icon=icon("pencil"), tabName="update_files")
       # ),
       menuItem("Enrichment", icon=icon("flask"), tabName = "enrich_tab_group",
-        menuSubItem("Upload", icon=icon("upload"), tabName="upload_deg_tab"),
-        menuSubItem("Enrichment", icon=icon("dna"), tabName="enrich_tab"),
+        menuSubItem("Enrich", icon=icon("upload"), tabName="upload_deg_tab"),
+        menuSubItem("Visualize", icon=icon("dna"), tabName="enrich_tab"),
         menuSubItem("Export", icon=icon("file-export"), tabName="export_rr_tab")
       ),
       menuItem("Clustering", icon=icon("layer-group"), tabName="cluster_tab_group",
@@ -109,6 +109,7 @@ server <- function(input, output) {
   
   u_rrnames <- reactiveValues(labels=NULL)  # rich result names
   u_rrdfs <- reactiveValues()  # rich result dataframes
+  u_big_rrdf <- reactiveValues() # list of uploaded degs with info
   
   u_clusnames <- reactiveValues(labels=NULL)  # cluster result names
   u_clusdfs <- reactiveValues()  # cluster result dataframes
@@ -122,7 +123,8 @@ server <- function(input, output) {
   updateTabServer("update", u_degnames=u_degnames, u_degdfs=u_degdfs, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
                   u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
-  uploadDegTabServer("upload_deg", u_degnames=u_degnames, u_degdfs=u_degdfs, u_big_degdf=u_big_degdf)
+  uploadDegTabServer("upload_deg", u_degnames=u_degnames, u_degdfs=u_degdfs, u_big_degdf=u_big_degdf,
+                     u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, u_big_rrdf=u_big_rrdf)
   enrichTabServer("enrich", u_degnames=u_degnames, u_degdfs=u_degdfs, u_big_degdf=u_big_degdf, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
                   u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)

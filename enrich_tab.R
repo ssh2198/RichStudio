@@ -224,7 +224,7 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_
           print(big_degdf$name)
           print(big_degdf$name %in% lab)
           
-          gene_header <- big_degdf[big_degdf[['df']]$name %in% lab, ]
+          gene_header <- big_degdf[big_degdf$name %in% lab, ]
           print(gene_header)
           gene_header <- gene_header$GeneID_header
           print(gene_header)

@@ -6,25 +6,48 @@ uploadDegTabUI <- function(id, tabName) {
     useShinyjs(),
     column(width = 4,
       fluidRow( 
-          box(title=span(icon("upload"), "File upload"), status="primary", solidHeader=TRUE, width=NULL,
-          helpText("Accepted formats: .txt, .csv, .tsv"),      
-          fileInput(ns('deg_files'), 'Select files', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt')),
-        )
-      ),
-      fluidRow(
-        box(title=span(icon("pencil"), "Text input"), status="primary", solidHeader=TRUE, width=NULL,
-          textAreaInput(ns('deg_text'), "Text Input", placeholder="Paste list of significant genes or dataframe-like object"),
-          textInput(ns('degtext_name'), "Name", placeholder="Set name for pasted DEG set"),
-          actionButton(ns('upload_degtext'), "Upload")
+        tabBox(title=span(icon("upload"), "Upload DEG sets"), id='upload_box', width=NULL,
+          tabPanel("File upload",
+            helpText("Accepted formats: .txt, .csv, .tsv"),      
+            fileInput(ns('deg_files'), 'Select files', multiple=TRUE, accept=c('.csv', '.tsv', '.xls', '.txt'))
+          ),
+          tabPanel("Text input",
+            helpText("Genes can be separated by any non-alphanumeric character"),
+            textAreaInput(ns('deg_text'), "Text Input", placeholder="Paste list of significant genes or dataframe-like object"),
+            textInput(ns('degtext_name'), "Name", placeholder="Set name for pasted DEG set"),
+            actionButton(ns('upload_degtext'), "Upload")
+          ),
+        ),
+        box(title="Enrich", status="primary", solidHeader=TRUE, width=NULL,
+          br(),
+          selectInput(ns('degs_to_enrich'), "Select DEG sets to enrich", choices=NULL, multiple=TRUE),
+          selectInput(ns('anntype_select'), "Select annotation source", c("GO", "KEGG", "Reactome")),
+          selectInput(ns('keytype_select'), "Select keytype", 
+                      c("ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS",
+                        "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "FLYBASE",
+                        "FLYBASECG", "FLYBASEPROT", "GENENAME", "GO", "GOALL", "MAP",
+                        "ONTOLOGY", "ONTOLOGYALL", "PATH", "PMID", "REFSEQ", "SYMBOL",
+                        "UNIGENE", "UNIPROT"), selected="SYMBOL"),
+          selectInput(ns('ont_select'), "Select ontology", c("BP", "MF", "CC")),
+          selectInput(ns('species_select'), "Select species", c('anopheles', 'arabidopsis', 'bovine', 'celegans', 'canine', 'fly', 'zebrafish',
+                                                                'ecoli', 'chicken', 'human', 'mouse', 'rhesus', 'malaria', 'chipm', 'rat',
+                                                                'toxoplasma', 'sco', 'pig', 'yeast', 'xenopus'), selected='human'),
+          actionButton(ns('enrich_deg'), "Enrich")
         )
       ),
     ),
     column(width = 8,
       shinyjs::hidden(tags$div(
         id=ns("deglist_box"),
-        box(title="Uploaded files", status="primary", solidHeader=TRUE, width=NULL,
-          DT::DTOutput(ns('deg_list_table')),
-          actionButton(ns('remove_btn'), "Delete")
+        tabBox(title="Uploaded files", width=NULL,
+          tabPanel("DEG sets",
+            DT::DTOutput(ns('deg_list_table')),
+            actionButton(ns('remove_deg'), "Delete")
+          ),
+          tabPanel("Enrichment Results",
+            DT::DTOutput(ns('rr_list_table')),
+            actionButton(ns('remove_rr'), "Delete")
+          )
         ))
       ), 
       box(title="View DEG sets", status="primary", solidHeader=TRUE, width=NULL,
@@ -47,22 +70,24 @@ uploadDegTabUI <- function(id, tabName) {
 }
 
 
-uploadDegTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf) {
+uploadDegTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_rrdfs, u_big_rrdf) {
   
   moduleServer(id, function(input, output, session) {
-    # create reactive objs to make accessible in other modules
+    # Create reactive objs to make accessible in other modules
     u_degnames_reactive <- reactive(u_degnames$labels) 
     u_degdfs_reactive <- reactive(u_degdfs)
     
-    # create reactive to store dataframe of uploaded files
+    # Create reactive to store dataframe of uploaded deg/rr
     u_big_degdf_reactive <- reactive(u_big_degdf)
+    u_big_rrdf_reactive <- reactive(u_big_rrdf)
     
-    # update select inputs based on # file inputs
+    # Update select inputs based on # file inputs
     observe({
       updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices= u_degnames_reactive())
+      updateSelectInput(session=getDefaultReactiveDomain(), 'degs_to_enrich', choices= u_degnames_reactive())
     })
     
-    # when deg upload button clicked
+    # When deg upload button clicked
     observeEvent(input$deg_files, {
       for (i in seq_along(input$deg_files$name)) {
         lab <- input$deg_files$name[i]
@@ -160,7 +185,7 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf) {
     })
     
     # Remove deg from uploaded degs
-    observeEvent(input$remove_btn, {
+    observeEvent(input$remove_deg, {
       req(input$deg_list_table_rows_selected)
       
       # Also remove from degdfs and degnames
@@ -212,6 +237,75 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf) {
         }
       }
     )
+    
+    # Enrich selected degs
+    # test text inputs:
+    # Xkr4 Rp1 Sox17
+    # Mrpl15 Lypla1 Tcea1
+    observeEvent(input$enrich_deg, {
+      req(input$degs_to_enrich)
+      
+      withProgress(message="Enriching DEG sets...", value=0, {
+        
+        for (i in seq_along(input$degs_to_enrich)) {
+          x <- u_degdfs[[input$degs_to_enrich[i]]]
+          
+          lab <- input$degs_to_enrich[i]
+          big_degdf <- u_big_degdf[['df']]
+          
+          gene_header <- big_degdf[big_degdf$name %in% lab, ]
+          gene_header <- gene_header$GeneID_header
+          
+          # enrich
+          df <- shiny_enrich(x=x, header=gene_header, species=input$species_select,
+                             anntype=as.character(input$anntype_select), keytype=as.character(input$keytype_select), ontology=as.character(input$ont_select))
+          incProgress(1/length(input$degs_to_enrich), message=NULL, detail=paste("Done enriching", input$degs_to_enrich[i]))
+          
+          u_rrdfs[[lab]] <- df@result # set u_rrdfs
+          u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 
+          
+          u_big_rrdf[['df']] <- add_file_rrdf(u_big_rrdf[['df']], name=lab, annot=as.character(input$anntype_select), 
+                                              keytype=as.character(input$keytype_select), ontology=as.character(input$ont_select), 
+                                              species=input$species_select)
+        }
+        
+      })
+      
+    })
+    
+    # Reactively update uploaded file dataframe
+    big_rrdf_to_table <- reactive({
+      u_big_rrdf[['df']]
+    })
+    # Output uploaded file table
+    output$rr_list_table = DT::renderDT(
+      big_rrdf_to_table(), editable='cell'
+    )
+    # Table editing code
+    proxy = dataTableProxy('rr_list_table')
+    observeEvent(input$rr_list_table_cell_edit, {
+      info = input$rr_list_table_cell_edit
+      str(info)
+      i = info$row
+      j = info$col
+      v = info$value
+      print(info$col)
+      
+      # Rename deg if changing a value in column 1 (name col)
+      if (info$col == 1) {
+        new_name <- v
+        old_name <- u_big_rrdf[['df']][i, j]
+        if (nchar(new_name) > 0 && nchar(old_name) > 0) {
+          u_rrnames$labels <- c(u_rrnames$labels, new_name)
+          u_rrnames$labels <- setdiff(u_rrnames$labels, old_name) # remove old name
+          
+          u_rrdfs[[new_name]] <- u_rrdfs[[old_name]]
+          u_rrdfs <- setdiff(names(u_rrdfs), old_name)
+        }
+      }
+      
+      u_big_rrdf[['df']][i, j] <<- DT::coerceValue(v, u_big_rrdf[['df']][i, j])
+    })
     
     
   })

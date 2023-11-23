@@ -51,3 +51,30 @@ rm_file_degdf <- function(df, rm_vec) {
   }
   return(df)
 }
+
+# Add enrichment result to rr_list
+add_file_rrdf <- function(df, name, annot=NULL, keytype=NULL, ontology=NULL, species=NULL) {
+  new_rr_vec <- c(name=name, from_deg=name, annot=annot, keytype=keytype, ontology=ontology, species=species)
+  
+  # If df is not null
+  if (!is.null(df)) { 
+    matching_rows <- apply(df, 1, function(row) all(row == new_rr_vec))
+    if (any(matching_rows)) {  # Don't append if exact rr already present
+      return(df)
+    } else { # Rbind if df already exists
+      df <- rbind(df, new_rr_vec)
+      names(df) <- c("name", "from_deg", "annot", "keytype", "ontology", "species")
+      rownames(df) <- NULL
+    }
+  } 
+  # Else set df to the new file vector
+  else { 
+    df <- new_rr_vec
+    df <- base::t(df)
+    df <- as.data.frame(df)
+    rownames(df) <- NULL
+  }
+  
+  return(df) # Return appended df on success
+  
+}
