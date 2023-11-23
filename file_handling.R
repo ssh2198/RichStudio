@@ -7,9 +7,11 @@
 
 add_file_degdf <- function(df, name, new_df) {
   # Don't add if name already in df
-  if (name %in% df$name) {
+  if (is.atomic(df) && name %in% df) { # Prevent error in $ operator for atomic vectors
     return(df)
-  }
+  } else if (!is.atomic(df) && name %in% df$name) {
+    return(df)
+  } 
   
   possible_geneID <- c("GeneID", "gene_id", "gene", "gene list") # Possible "GeneID" colnames
   geneIDmatches <- grep(paste(possible_geneID, collapse="|"), colnames(new_df), ignore.case=TRUE)
@@ -27,8 +29,12 @@ add_file_degdf <- function(df, name, new_df) {
     if (!is.null(df)) { # rbind if df already exists
       df <- rbind(df, new_file_vec)
       names(df) <- c("name", "GeneID_header", "has_expr_data")
+      rownames(df) <- NULL
     } else { # else set df to the new file vector
       df <- new_file_vec
+      df <- base::t(df)
+      df <- as.data.frame(df)
+      rownames(df) <- NULL
     }
     return(df) # Return appended df on success
   } else {
@@ -38,6 +44,10 @@ add_file_degdf <- function(df, name, new_df) {
 
 rm_file_degdf <- function(df, rm_vec) {
   #df <- df[df %!in% rm_vec]
-  df <- df[-which(df$name %in% rm_vec$name), ]
+  if(!is.atomic(df)){
+    df <- df[-which(df$name %in% rm_vec$name), ]
+  } else {
+    df <- NULL
+  }
   return(df)
 }

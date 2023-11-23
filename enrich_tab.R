@@ -214,11 +214,25 @@ enrichTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_
         for (i in seq_along(input$selected_degs)) {
           x <- u_degdfs[[input$selected_degs[i]]]
           
+          lab <- input$selected_degs[i]
+          big_degdf <- u_big_degdf[['df']]
+          
+          print(lab)
+          print(big_degdf)
+          
+          print("...")
+          print(big_degdf$name)
+          print(big_degdf$name %in% lab)
+          
+          gene_header <- big_degdf[big_degdf[['df']]$name %in% lab, ]
+          print(gene_header)
+          gene_header <- gene_header$GeneID_header
+          print(gene_header)
+          
           # enrich
-          df <- shiny_enrich(x=x, header=as.character(input$header_input), species=input$species_select,
+          df <- shiny_enrich(x=x, header=gene_header, species=input$species_select,
                              anntype=as.character(input$anntype_select), keytype=as.character(input$keytype_select), ontology=as.character(input$ont_select))
           incProgress(1/length(input$selected_degs), message=NULL, detail=paste("Done enriching", input$selected_degs[i]))
-          lab <- input$selected_degs[i]
           
           u_rrdfs[[lab]] <- df@result # set u_rrdfs
           u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames 

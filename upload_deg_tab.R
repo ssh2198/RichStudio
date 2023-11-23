@@ -55,11 +55,11 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf) {
     u_degdfs_reactive <- reactive(u_degdfs)
     
     # create reactive to store dataframe of uploaded files
-    u_big_degdf <- reactiveValues(df=data.frame())
+    u_big_degdf_reactive <- reactive(u_big_degdf)
     
     # update select inputs based on # file inputs
     observe({
-      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices= u_big_degdf$df$name)
+      updateSelectInput(session=getDefaultReactiveDomain(), 'deg_table_select', choices= u_degnames_reactive())
     })
     
     # when deg upload button clicked
@@ -92,11 +92,13 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf) {
         
         u_degdfs[[lab]] <- df # set u_degdfs
         u_degnames$labels <- c(u_degnames$labels, lab) # set u_degnames 
-        u_big_degdf$df <- add_file_degdf(u_big_degdf$df, lab, df)
+        print("does this work?")
+        u_big_degdf[['df']] <- add_file_degdf(u_big_degdf[['df']], lab, df)
+        print("yes!")
       }
       
       # Show file list
-      if (!is.null(u_big_degdf)) {
+      if (!is.null(u_big_degdf[['df']])) {
         shinyjs::show("deglist_box")
         print("showing...")
       }
@@ -113,10 +115,10 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf) {
       
       u_degdfs[[lab]] <- df # set u_degdfs
       u_degnames$labels <- c(u_degnames$labels, lab)
-      u_big_degdf$df <- add_file_degdf(u_big_degdf$df, lab, df)
+      u_big_degdf[['df']] <- add_file_degdf(u_big_degdf[['df']], lab, df)
       
       # Show file list
-      if (!is.null(u_big_degdf)) {
+      if (!is.null(u_big_degdf[['df']])) {
         shinyjs::show("deglist_box")
         print("showing...")
       }
@@ -125,7 +127,7 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf) {
 
     # Reactively update uploaded file dataframe
     big_degdf_to_table <- reactive({
-      u_big_degdf$df
+      u_big_degdf[['df']]
     })
     # Output uploaded file table
     output$deg_list_table = DT::renderDT(
@@ -144,7 +146,7 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf) {
       # Rename deg if changing a value in column 1 (name col)
       if (info$col == 1) {
         new_name <- v
-        old_name <- u_big_degdf$df[i, j]
+        old_name <- u_big_degdf[['df']][i, j]
         if (nchar(new_name) > 0 && nchar(old_name) > 0) {
           u_degnames$labels <- c(u_degnames$labels, new_name)
           u_degnames$labels <- setdiff(u_degnames$labels, old_name) # remove old name
@@ -154,7 +156,7 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf) {
         }
       }
       
-      u_big_degdf$df[i, j] <<- DT::coerceValue(v, u_big_degdf$df[i, j])
+      u_big_degdf[['df']][i, j] <<- DT::coerceValue(v, u_big_degdf[['df']][i, j])
     })
     
     # Remove deg from uploaded degs
@@ -163,7 +165,7 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf) {
       
       # Also remove from degdfs and degnames
       for (deg in input$deg_list_table_rows_selected) {
-        deg_to_rm <- u_big_degdf$df[deg, ]
+        deg_to_rm <- u_big_degdf[['df']][deg, ]
         deg_to_rm <- deg_to_rm$name
         
         u_degdfs <- setdiff(names(u_degdfs), deg_to_rm)
@@ -171,10 +173,10 @@ uploadDegTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf) {
       }
       
       # Remove selection from u_big_degdf
-      rm_vec <- u_big_degdf$df[input$deg_list_table_rows_selected, ]
-      u_big_degdf$df <- rm_file_degdf(u_big_degdf$df, rm_vec)
+      rm_vec <- u_big_degdf[['df']][input$deg_list_table_rows_selected, ]
+      u_big_degdf[['df']] <- rm_file_degdf(u_big_degdf[['df']], rm_vec)
       
-      if (is.null(u_big_degdf$df)) {
+      if (is.null(u_big_degdf[['df']])) {
         shinyjs::hide("deglist_box")
         print("hide")
       }
