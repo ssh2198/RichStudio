@@ -16,6 +16,8 @@ add_file_degdf <- function(df, name, new_df) {
   possible_geneID <- c("GeneID", "gene_id", "gene", "gene list") # Possible "GeneID" colnames
   geneIDmatches <- grep(paste(possible_geneID, collapse="|"), colnames(new_df), ignore.case=TRUE)
   
+  # Make expr_data checking better later
+  # For now assumes dataframe-like objects contain expression data
   if (length(names(new_df)) > 1) {
     expr_data <- "True"
   } else {
@@ -25,10 +27,12 @@ add_file_degdf <- function(df, name, new_df) {
   # If one GeneID column matched
   if (length(geneIDmatches) == 1) {
     geneIDcol <-  names(new_df[geneIDmatches])
-    new_file_vec <- c(name=name, GeneID_header=geneIDcol, has_expr_data=expr_data)
+    num_genes <- length(new_df[, geneIDcol]) # Count # genes
+    
+    new_file_vec <- c(name=name, GeneID_header=geneIDcol, num_genes=num_genes, has_expr_data=expr_data)
     if (!is.null(df)) { # rbind if df already exists
       df <- rbind(df, new_file_vec)
-      names(df) <- c("name", "GeneID_header", "has_expr_data")
+      names(df) <- c("name", "GeneID_header", "num_genes", "has_expr_data")
       rownames(df) <- NULL
     } else { # else set df to the new file vector
       df <- new_file_vec
