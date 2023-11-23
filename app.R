@@ -49,8 +49,8 @@ source('cluster_hmap.R')
 source('home_tab.R')
 source('upload_tab.R')
 source('update_tab.R')
-source('upload_deg_tab.R')
 source('enrich_tab.R')
+source('rr_visualize_tab.R')
 source('cluster_tab.R')
 
 
@@ -64,14 +64,14 @@ ui <- dashboardPage(
       #   menuSubItem("Rename/remove files", icon=icon("pencil"), tabName="update_files")
       # ),
       menuItem("Enrichment", icon=icon("flask"), tabName = "enrich_tab_group",
-        menuSubItem("Enrich", icon=icon("upload"), tabName="upload_deg_tab"),
-        menuSubItem("Visualize", icon=icon("dna"), tabName="enrich_tab"),
-        menuSubItem("Export", icon=icon("file-export"), tabName="export_rr_tab")
+        menuSubItem("Enrich", icon=icon("upload"), tabName="enrich_tab"),
+        menuSubItem("Visualize", icon=icon("dna"), tabName="rr_visualize_tab")
+        #menuSubItem("Export", icon=icon("file-export"), tabName="export_rr_tab")
       ),
       menuItem("Clustering", icon=icon("layer-group"), tabName="cluster_tab_group",
-        menuSubItem("Upload", icon=icon("upload"), tabName="upload_rr_tab"),
-        menuSubItem("Cluster", icon=icon("layer-group"), tabName="cluster_tab"),
-        menuSubItem("Export", icon=icon("file-export"), tabName="export_cluster_tab")
+        menuSubItem("Cluster", icon=icon("upload"), tabName="cluster_tab"),
+        menuSubItem("Visualize", icon=icon("layer-group"), tabName="clus_visualize_tab")
+        #menuSubItem("Export", icon=icon("file-export"), tabName="export_cluster_tab")
       )
     )
   ),
@@ -81,8 +81,8 @@ ui <- dashboardPage(
       homeTabUI("home", tabName="home_tab"),
       uploadTabUI("upload", tabName="upload_files"),
       updateTabUI("update", tabName="update_files"),
-      uploadDegTabUI("upload_deg", tabName="upload_deg_tab"),
       enrichTabUI("enrich", tabName="enrich_tab"),
+      rrVisTabUI("rr_visualize", tabName="rr_visualize_tab"),
       clusterTabUI("cluster", tabName="cluster_tab")
     ),
     tags$head(
@@ -123,10 +123,10 @@ server <- function(input, output) {
   updateTabServer("update", u_degnames=u_degnames, u_degdfs=u_degdfs, 
                   u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
                   u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
-  uploadDegTabServer("upload_deg", u_degnames=u_degnames, u_degdfs=u_degdfs, u_big_degdf=u_big_degdf,
+  enrichTabServer("enrich", u_degnames=u_degnames, u_degdfs=u_degdfs, u_big_degdf=u_big_degdf,
                      u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, u_big_rrdf=u_big_rrdf)
-  enrichTabServer("enrich", u_degnames=u_degnames, u_degdfs=u_degdfs, u_big_degdf=u_big_degdf, 
-                  u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, 
+  rrVisTabServer("rr_visualize", u_degnames=u_degnames, u_degdfs=u_degdfs, u_big_degdf=u_big_degdf, 
+                  u_rrnames=u_rrnames, u_rrdfs=u_rrdfs, u_big_rrdf=u_big_rrdf,
                   u_clusnames=u_clusnames, u_clusdfs=u_clusdfs, u_cluslists=u_cluslists)
   #uploadRichTabServer()
   clusterTabServer("cluster", u_degnames=u_degnames, u_degdfs=u_degdfs, 

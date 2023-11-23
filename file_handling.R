@@ -53,8 +53,16 @@ rm_file_degdf <- function(df, rm_vec) {
 }
 
 # Add enrichment result to rr_list
-add_file_rrdf <- function(df, name, annot=NULL, keytype=NULL, ontology=NULL, species=NULL) {
-  new_rr_vec <- c(name=name, from_deg=name, annot=annot, keytype=keytype, ontology=ontology, species=species)
+# @param file: Whether rr to append comes from a file or from RichStudio enrichment
+add_file_rrdf <- function(df, name, annot='?', keytype='?', ontology='?', species='?', file=FALSE) {
+  if (file==FALSE) {
+    rr_name <- paste0(name, "_enriched")
+    deg_name <- name
+  } else if (file==TRUE) {
+    rr_name <- name
+    deg_name <- "No"
+  }
+  new_rr_vec <- c(name=rr_name, from_deg=deg_name, annot=annot, keytype=keytype, ontology=ontology, species=species)
   
   # If df is not null
   if (!is.null(df)) { 
@@ -77,4 +85,14 @@ add_file_rrdf <- function(df, name, annot=NULL, keytype=NULL, ontology=NULL, spe
   
   return(df) # Return appended df on success
   
+}
+
+rm_file_rrdf <- function(df, rm_vec) {
+  #df <- df[df %!in% rm_vec]
+  if(!is.atomic(df)){
+    df <- df[-which(df$name %in% rm_vec$name), ]
+  } else {
+    df <- NULL
+  }
+  return(df)
 }
