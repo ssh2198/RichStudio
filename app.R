@@ -21,18 +21,18 @@ library(richR)
 library(bioAnno)
 
 #Set working directory
-getwd()
-library(rstudioapi)
-current_path <- getActiveDocumentContext()$path
-setwd(dirname(current_path))
-base_dir = dirname(current_path)
-output = "output/"
+# getwd()
+# library(rstudioapi)
+# current_path <- getActiveDocumentContext()$path
+# setwd(dirname(current_path))
+# base_dir = dirname(current_path)
+# output = "output/"
 
 # Set working directory with config.yml (Fix later)
-# config_vars <- config::get("hurlab-server")
-# setwd(config_vars$project_directory)
-# 
-# options(shiny.error = browser)
+config_vars <- config::get("hurlab-server")
+setwd(config_vars$project_directory)
+
+options(shiny.error = browser)
 
 # Source related scripts
 source("file_handling.R")
@@ -55,7 +55,7 @@ source('cluster_tab.R')
 
 
 ui <- dashboardPage(
-  dashboardHeader(title = "RichStudio v0.1.0"),
+  dashboardHeader(title = "RichStudio v0.1.3"),
   dashboardSidebar(
     sidebarMenu(
       menuItem("Home", icon=icon("house"), tabName="home_tab"),
