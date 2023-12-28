@@ -112,18 +112,21 @@ rrVisTabUI <- function(id, tabName) {
           # Heatmap
           tabPanel("Heatmap",
             tabBox(id=ns("edit_hmap_box"), width = NULL,
-              # EZ heatmap
-              tabPanel(title="Quick make", 
-                selectInput(ns("ez_add_select"), "Select enrichment results", choices=NULL, multiple=TRUE),
+              # Top terms heatmap
+              tabPanel(title="Top terms", 
                 fluidRow(
                   column(4, 
+                    selectInput(ns("ez_add_select"), "Select enrichment results", choices=NULL, multiple=TRUE),
                     selectInput(ns("ez_value_by"), "Select top terms by", choices=c("Padj", "Pvalue")),
+                    numericInput(ns("ez_value_cutoff"), "P-value cutoff", value=0.05, min=0, max=1),
+                    sliderInput(ns("ez_nterms"), "Number of terms per result to display", value=10, min=0, max=100)
                   ),
-                  column(4,
-                    numericInput(ns("ez_value_cutoff"), "P-value cutoff", value=0.05, min=0, max=1)
+                  column(8,
+                    h3("Enrichment results in heatmap"),
+                    p("Double click any cell to change its value."),
+                    DT::DTOutput(ns('rr_tophmap_table'))
                   )
-                ),
-                sliderInput(ns("ez_nterms"), "Number of terms per result to display", value=10, min=0, max=100)
+                )
               ),
               # add enrichment result to heatmap
               tabPanel(title="Add",
@@ -195,6 +198,7 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
     rr_custom_list_reactive <- reactiveValues(labels=NULL)
     rr_term_vec_reactive <- reactiveValues()
     custom_data_reactive <- reactiveValues(df = data.frame())
+    top_hmap_df_reactive <- reactiveValues(df = data.frame())
     
     value_by_reactive <- reactiveVal()
     
@@ -353,7 +357,7 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
     })
     
     # Enrichment Result Heatmap
-    # quick make
+    # Top Terms
     # ez_listen <- reactive({
     #   list(input$ez_add_select, input$ez_value_by, input$ez_nterms, input$ez_value_cutoff)
     # })
@@ -361,7 +365,7 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
       c(input$ez_add_select, input$ez_value_by, input$ez_nterms, input$ez_value_cutoff)
     }, {
       req(input$ez_add_select)
-      req(input$edit_hmap_box == "Quick make")
+      req(input$edit_hmap_box == "Top terms")
       # reset custom_data and the list of added genesets and terms
       value_by_reactive(input$ez_value_by)
       
@@ -369,9 +373,11 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
         custom_data_reactive$df <- data.frame()
         rr_custom_list_reactive <- NULL
         rr_term_vec_reactive <- NULL
+        top_hmap_df_reactive$df <- data.frame()
         
         for (i in seq_along(input$ez_add_select)) {
           gs <- u_rrdfs[[input$ez_add_select[i]]]
+          gs_name <- input$ez_add_select[i]
           
           # add gs to list only if there exist values smaller than cutoff
           if (any(gs[, value_by_reactive()] < input$rr_value_cutoff)) {
@@ -382,11 +388,16 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
             
             # add gs to custom_data_reactive
             custom_data_reactive$df <- add_gs(custom_data=custom_data_reactive$df, gs=gs, 
-                                              gs_name=input$ez_add_select[i], term_vec=term_vec)
+                                              gs_name=gs_name, term_vec=term_vec)
             # add terms to rr_term_vec_reactive
-            rr_term_vec_reactive[[input$ez_add_select[i]]] <- term_vec
+            rr_term_vec_reactive[[gs_name]] <- term_vec
             # add gs name to rr_custom_list_reactive
-            rr_custom_list_reactive$labels <- c(rr_custom_list_reactive$labels, input$ez_add_select[i])
+            rr_custom_list_reactive$labels <- c(rr_custom_list_reactive$labels, gs_name)
+            
+            # Add gs to top_hmap_df_reactive
+            top_hmap_df_reactive$df <- add_rr_tophmap(df=top_hmap_df_reactive$df, name=gs_name, 
+                                                      value_type=value_by_reactive(), value_cutoff=input$ez_value_cutoff,
+                                                      top_nterms=input$ez_nterms)
             print(input$ez_add_select[i])
             print("...")
             print(rr_custom_list_reactive$labels)
@@ -395,6 +406,47 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
       }
       
     })
+    
+    # Reactively update top_hmap_df
+    top_hmap_to_table <- reactive ({
+      req(!is.null(top_hmap_df_reactive))
+      return(top_hmap_df_reactive$df)
+    })
+    output$rr_tophmap_table = DT::renderDT(
+      top_hmap_to_table(), editable='cell'
+    )
+    # Table editing code
+    proxy = dataTableProxy('rr_tophmap_table')
+    observeEvent(input$rr_tophmap_table_cell_edit, {
+      info = input$rr_tophmap_table_edit
+      str(info)
+      i = info$row
+      j = info$col
+      v = info$value
+      print(info$col)
+      
+      # Rename rr if changing a value in column 1 (name col)
+      if (info$col == 1) {
+        new_name <- v
+        old_name <- top_hmap_df_reactive$df[i, j]
+        if (nchar(new_name) > 0 && nchar(old_name) > 0) {
+          u_rrnames$labels <- c(u_rrnames$labels, new_name)
+          u_rrnames$labels <- setdiff(u_rrnames$labels, old_name) # remove old name
+          
+          u_rrdfs[[new_name]] <- u_rrdfs[[old_name]]
+          u_rrdfs <- setdiff(names(u_rrdfs), old_name)
+        }
+      }
+      
+      top_hmap_df_reactive$df[i, j] <<- DT::coerceValue(v, top_hmap_df_reactive$df[i, j])
+      
+      add_rr_tophmap(df=top_hmap_df_reactive$df, 
+                     name=top_hmap_df_reactive$df[i, 1],
+                     value_type=top_hmap_df_reactive$df[i, 2], 
+                     value_cutoff=top_hmap_df_reactive$df[i, 3], 
+                     top_nterms=top_hmap_df_reactive$df[i, 4])
+    })
+    
     
     # add
     # reactively update which rr table is read based on selection
