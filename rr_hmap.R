@@ -76,6 +76,69 @@ add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
 }
 
 
+topterm_edit_gs <- function(custom_data, gs, gs_name, value_type, value_cutoff, top_nterms) {
+  
+  # Make sure value_cutoff, top_nterms are numeric
+  value_cutoff <- as.numeric(value_cutoff)
+  top_nterms <- as.numeric(top_nterms)
+  if (is.na(value_cutoff) || is.na(top_nterms)) {
+    stop("value_cutoff and top_nterms must be numeric")
+  }
+  
+  # Filter gs by value_type, value_cutoff, and top_nterms
+  gs <- filter(gs, gs[, value_type] < value_cutoff)
+  gs <- gs %>%
+    arrange(value_type) %>%
+    slice_head(n = top_nterms)
+  gs <- gs[, c("Annot", "Term", value_type, "GeneID")]
+  
+  # Append filename to all colnames except "Annot" and "Term"
+  exclude_cols <- c("Annot", "Term")
+  colnames(gs) <- ifelse(colnames(gs) %in% exclude_cols, colnames(gs), 
+                         paste(colnames(gs), gs_name, sep="_"))
+  
+  # If gs already added, remove corresponding columns
+  same_gs_cols <- grepl(gs_name, colnames(custom_data))
+  custom_data <- custom_data[, !same_gs_cols]
+  
+  # If no other gs in custom_data...
+  if (nrow(custom_data) == 0 || length(colnames(custom_data)) == 3) {
+    custom_data <- gs # Set gs as the new custom_data
+  } else { # Else, merge
+    custom_data <- base::merge(custom_data, gs, by=c('Annot', 'Term'), all=TRUE)
+  }
+  
+  # MERGE GENEID COLS
+  geneid_cols <- c(grep(paste0("^", "GeneID", "_"), colnames(custom_data), value=TRUE))
+  tmp <- custom_data[, geneid_cols]
+  # If tmp is a vector (one gs in custom_data)
+  if (is.null(dim(tmp))) { 
+    names(tmp) <- c("GeneID")
+    custom_data$GeneID <- tmp
+  }
+  # Multiple genesets in custom_data; merge GeneIDs
+  else { 
+    custom_data$GeneID <- apply(custom_data[, geneid_cols], 1, function(x) {
+      paste(unique(c(x)), collapse=',') # Iterate over all geneid_cols for unique items
+    })
+    custom_data$GeneID <- sapply(custom_data$GeneID, function(x) {
+      gsub('NA,', '', x) # Catch NA in the beginning/middle
+    })
+    custom_data$GeneID <- sapply(custom_data$GeneID, function(x) {
+      gsub(',NA$', '', x, perl=TRUE) # Catch NA at the end
+    })
+  }
+  
+  # Create logical vector, indicates FALSE if entire row is NA or NULL
+  remove_df <- custom_data[, !(colnames(custom_data) %in% c("Annot", "Term", "GeneID"))]
+  remove_vec <- apply(remove_df, 1, function(row) {
+    all(is.na(row) | sapply(row, is.null))
+  })
+  custom_data <- custom_data[!remove_vec, ] # Remove all NA/NULL rows from custom_data
+  
+}
+
+
 # Remove selected terms/geneset from combined dataframe
 # term_vec <- c("Steroid biosynthesis", "Lysosome")
 # delete_all <- c("Steroid biosynthesis", "Lysosome", "Toxoplasmosis", "Prion diseases", "Terpenoid backbone biosynthesis", "Metabolic pathways")

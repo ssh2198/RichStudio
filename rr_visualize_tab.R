@@ -398,9 +398,9 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
             top_hmap_df_reactive$df <- add_rr_tophmap(df=top_hmap_df_reactive$df, name=gs_name, 
                                                       value_type=value_by_reactive(), value_cutoff=input$ez_value_cutoff,
                                                       top_nterms=input$ez_nterms)
-            print(input$ez_add_select[i])
-            print("...")
-            print(rr_custom_list_reactive$labels)
+            # print(input$ez_add_select[i])
+            # print("...")
+            # print(rr_custom_list_reactive$labels)
           }
         }
       }
@@ -413,38 +413,33 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
       return(top_hmap_df_reactive$df)
     })
     output$rr_tophmap_table = DT::renderDT(
-      top_hmap_to_table(), editable='cell'
+      top_hmap_to_table(), 
+      editable = list(target='cell', disable=list(columns = c(1)))
     )
     # Table editing code
     proxy = dataTableProxy('rr_tophmap_table')
     observeEvent(input$rr_tophmap_table_cell_edit, {
-      info = input$rr_tophmap_table_edit
+      info = input$rr_tophmap_table_cell_edit
       str(info)
       i = info$row
       j = info$col
       v = info$value
-      print(info$col)
+      print(paste("The info is:", v))
       
-      # Rename rr if changing a value in column 1 (name col)
-      if (info$col == 1) {
-        new_name <- v
-        old_name <- top_hmap_df_reactive$df[i, j]
-        if (nchar(new_name) > 0 && nchar(old_name) > 0) {
-          u_rrnames$labels <- c(u_rrnames$labels, new_name)
-          u_rrnames$labels <- setdiff(u_rrnames$labels, old_name) # remove old name
-          
-          u_rrdfs[[new_name]] <- u_rrdfs[[old_name]]
-          u_rrdfs <- setdiff(names(u_rrdfs), old_name)
-        }
-      }
-      
+      #print(paste("(1.5) rrdfs contains", names(u_rrdfs)))
       top_hmap_df_reactive$df[i, j] <<- DT::coerceValue(v, top_hmap_df_reactive$df[i, j])
-      
-      add_rr_tophmap(df=top_hmap_df_reactive$df, 
-                     name=top_hmap_df_reactive$df[i, 1],
-                     value_type=top_hmap_df_reactive$df[i, 2], 
-                     value_cutoff=top_hmap_df_reactive$df[i, 3], 
-                     top_nterms=top_hmap_df_reactive$df[i, 4])
+      gs_name <- top_hmap_df_reactive$df[i, 1]
+      #print(paste("Gs name:", gs_name))
+
+      #print("Does this work?")
+      print(head(u_rrdfs[[gs_name]]))
+      custom_data_reactive$df <- topterm_edit_gs(custom_data=custom_data_reactive$df,
+                                                 gs=u_rrdfs[[gs_name]],
+                                                 gs_name=gs_name,
+                                                 value_type=top_hmap_df_reactive$df[i, 2],
+                                                 value_cutoff=top_hmap_df_reactive$df[i, 3],
+                                                 top_nterms=top_hmap_df_reactive$df[i, 4])
+
     })
     
     
@@ -520,12 +515,12 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
     })
     
     # Debugging delete terms...
-    observeEvent({
-      input$edit_hmap_box == "Delete"
-    }, {
-      print(rr_custom_list_reactive)
-      print(rr_custom_list_reactive$labels)
-    })
+    # observeEvent({
+    #   input$edit_hmap_box == "Delete"
+    # }, {
+    #   print(rr_custom_list_reactive)
+    #   print(rr_custom_list_reactive$labels)
+    # })
     
     # plot enrichment result heatmap
     plot_custom_hmap <- reactive({
