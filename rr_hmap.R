@@ -135,7 +135,7 @@ topterm_edit_gs <- function(custom_data, gs, gs_name, value_type, value_cutoff, 
     all(is.na(row) | sapply(row, is.null))
   })
   custom_data <- custom_data[!remove_vec, ] # Remove all NA/NULL rows from custom_data
-  
+  return(custom_data)
 }
 
 
@@ -163,16 +163,63 @@ remove_gs <- function(custom_data, gs_name, term_vec, delete_all=NULL) {
 }
 
 
-# Create heatmap from combined dataframe
+# Create custom heatmap from combined dataframe
 # value_type <- "Padj"
 custom_hmap <- function(custom_data, value_type) {
+  
   # Grab either Pvalue or Padj based on value_type
   value_cols <- c(grep(paste0("^", value_type, "_"), colnames(custom_data), value=TRUE))
+  if (length(value_cols) == 0) {
+    stop("Invalid value_type")
+  }
   # Subset new_final_data by value_type
   subsetted_final_data <- custom_data[, c("Annot", "Term", "GeneID", value_cols)]
-  
   # Remove "Pvalue" or "Padj" from colnames
   colnames(subsetted_final_data) <- gsub(paste0("^", value_type, "_"), "", colnames(subsetted_final_data))
+
+  melted_custom_data <- reshape2::melt(subsetted_final_data, id.vars = c("Term", "Annot", "GeneID"))
+  
+  melted_custom_data$value <- as.numeric(melted_custom_data$value)
+  melted_custom_data$value <- -log10(melted_custom_data$value)
+  melted_custom_data$value <- round(melted_custom_data$value, 4)
+  
+  my_nticks <- length(unique(melted_custom_data$Term))
+  
+  # Plot the heatmap
+  p <- plot_ly (
+    data = melted_custom_data,
+    x = ~variable,
+    y = ~Term,
+    z = ~value,
+    type = "heatmap",
+    colors = c('green', 'red'),
+    text = ~paste0(Term, "<br>", "-log10(", value_type, "): ", value, "<br>"),  # Customize hover text
+    colorbar = list(title = paste0("-log10(", value_type, ")")),
+    hoverinfo = "text"
+  ) %>%
+    layout (
+      title = paste0("-log10(", value_type, ") by Term"),
+      xaxis = list(title = 'Geneset'), 
+      yaxis = list(title = 'Term', categoryorder = "trace", nticks = my_nticks)
+    )
+  return(p)
+}
+
+
+
+# Create custom heatmap from combined dataframe
+# value_type <- "Padj"
+topterm_hmap <- function(custom_data) {
+  
+  # Grab either Pvalue or Padj based on value_type
+  value_cols <- c(grep("^(Pvalue_|Padj_)", colnames(custom_data), value=TRUE))
+  if (length(value_cols) == 0) {
+    stop("No value columns found")
+  }
+  # Subset new_final_data by value_type
+  subsetted_final_data <- custom_data[, c("Annot", "Term", "GeneID", value_cols)]
+  # Remove "Pvalue" or "Padj" from colnames
+  colnames(subsetted_final_data) <- gsub("^(Pvalue_|Padj_)", "", colnames(subsetted_final_data))
   
   melted_custom_data <- reshape2::melt(subsetted_final_data, id.vars = c("Term", "Annot", "GeneID"))
   

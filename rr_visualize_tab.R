@@ -414,7 +414,7 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
     })
     output$rr_tophmap_table = DT::renderDT(
       top_hmap_to_table(), 
-      editable = list(target='cell', disable=list(columns = c(1)))
+      editable = list(target='cell', disable=list(columns = c(1:2)))
     )
     # Table editing code
     proxy = dataTableProxy('rr_tophmap_table')
