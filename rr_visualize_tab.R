@@ -17,14 +17,12 @@ rrVisTabUI <- function(id, tabName) {
             actionButton(ns('upload_rrtext'), "Upload")
           )
         ),
-        shinyjs::hidden(tags$div(
-          id=ns("rrlist_box"),
+        shinyjs::hidden(tags$div(id=ns("rrlist_box"),
           box(title="Available enrichment results", width=NULL,
             helpText("You can rename any enrichment result by double-clicking on the relevant cell."),
             DT::DTOutput(ns('rr_list_table')),
             actionButton(ns('remove_rr'), "Delete")
-          )
-        ))
+          )))
       ),
       
       # VISUALIZATION
@@ -35,8 +33,18 @@ rrVisTabUI <- function(id, tabName) {
           # Table
           tabPanel("Table",
             box(title="Table View", width=NULL, status='primary', collapsible=TRUE,
-              br(),
               selectInput(ns('select_table'), "Select enrichment result to view", choices=NULL, multiple=FALSE),
+              # fluidRow(
+              #   column(4,
+              #     selectInput(ns('table_valueby'), "Filter by Padj or Pvalue?", choices=c("Padj", "Pvalue"), multiple=FALSE)
+              #   ),
+              #   column(4,
+              #     numericInput(ns("table_cutoff"), "P-value cutoff", value=0.05, min=0, max=1)
+              #   ),
+              #   column(4,
+              #     checkboxInput(ns("table_view_all"), "", value=0.05, min=0, max=1)
+              #   )
+              # ),
             ),
             box(title='Table View', width=NULL, status='info', solidHeader=TRUE,
               DT::dataTableOutput(ns('rr_table'))
@@ -129,7 +137,7 @@ rrVisTabUI <- function(id, tabName) {
                 )
               ),
               # add enrichment result to heatmap
-              tabPanel(title="Add",
+              tabPanel(title="Custom terms",
                 selectInput(ns("rr_add_select"), "Select enrichment result", choices=NULL, multiple=FALSE),
                 fluidRow(
                   column(4,
@@ -159,11 +167,17 @@ rrVisTabUI <- function(id, tabName) {
                 )
               )
             ),
-            br(),
-            box(title="Enrichment Result Heatmap", status="info", width=NULL,
+            # The actual heatmap plots
+            shinyjs::hidden(tags$div(id=ns("top_hmap_box"),
+              box(title="Top Terms Heatmap", status="info", width=NULL,
                 solidHeader = TRUE,
-                plotlyOutput(ns('rr_hmap'), height="800px")
-            )
+                plotlyOutput(ns('topterm_hmap'), height="800px")
+              ))),
+            shinyjs::hidden(tags$div(id=ns("custom_hmap_box"),
+              box(title="Custom Terms Heatmap", status="info", width=NULL,
+                solidHeader = TRUE,
+                plotlyOutput(ns('custom_hmap'), height="800px")
+              )))
           )
         )
       )
@@ -197,6 +211,7 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
     # Local reactive objects
     rr_custom_list_reactive <- reactiveValues(labels=NULL)
     rr_term_vec_reactive <- reactiveValues()
+    tt_custom_data_reactive <- reactiveValues(df = data.frame())
     custom_data_reactive <- reactiveValues(df = data.frame())
     top_hmap_df_reactive <- reactiveValues(df = data.frame())
     
@@ -214,11 +229,23 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
       updateSelectInput(session=getDefaultReactiveDomain(), 'rr_delete_select', choices=rr_custom_list_reactive$labels)
     })
     
+    # <!----- SHINYJS LOGIC -----!>
+    # Don't show list of rr if none uploaded
     observe ({
       if (is.null(u_big_rrdf[['df']])) {
         shinyjs::hide('rrlist_box')
       } else {
         shinyjs::show("rrlist_box")
+      }
+    })
+    # Toggle which heatmap box is shown
+    observeEvent(input$edit_hmap_box, {
+      if (input$edit_hmap_box == "Custom terms") {
+        shinyjs::show('custom_hmap_box')
+        shinyjs::hide('top_hmap_box')
+      } else {
+        shinyjs::hide('custom_hmap_box')
+        shinyjs::show('top_hmap_box')
       }
     })
     
@@ -232,21 +259,21 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
         ext <- tools::file_ext(input$rr_files$name[i])
         path <- input$rr_files$datapath[i]
         
-        # try to read file as csv
+        # Try to read file as csv
         csv_ncol <- tryCatch({
           csvdf <- read.csv(path)
           ncol(csvdf)
         }, error = function(err) {
           0
         })
-        # try to read file as tsv
+        # Try to read file as tsv
         tsv_ncol <- tryCatch({
           tsvdf <- read.delim(path)
           ncol(tsvdf)
         }, error = function(err) {
           0
         })
-        # decide which df to store
+        # Decide which df to store
         if (tsv_ncol == 0 || csv_ncol > tsv_ncol) {
           df <- read.csv(path)
         } else {
@@ -254,9 +281,10 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
         }
         
         #u_rrdfs[[lab]] <- select_required_columns(df) # set u_rrdfs
-        u_rrdfs[[lab]] <- df # set u_rrdfs
-        u_rrnames$labels <- c(u_rrnames$labels, lab) # set u_rrnames
-        u_big_rrdf[['df']] <- add_file_rrdf(df=u_big_rrdf[['df']], name=lab, file=TRUE)
+        u_rrdfs[[lab]] <- df # Add datafrane to u_rrdfs
+        u_rrnames$labels <- c(u_rrnames$labels, lab) # Add df name to u_rrnames
+        u_big_rrdf[['df']] <- add_file_rrdf(df=u_big_rrdf[['df']], 
+                                            name=lab, file=TRUE) # Add to big rr list
       }
       
     })
@@ -284,14 +312,13 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
         new_name <- v
         old_name <- u_big_rrdf[['df']][i, j]
         if (nchar(new_name) > 0 && nchar(old_name) > 0) {
-          u_rrnames$labels <- c(u_rrnames$labels, new_name)
-          u_rrnames$labels <- setdiff(u_rrnames$labels, old_name) # remove old name
+          u_rrnames$labels <- c(u_rrnames$labels, new_name) # Add new name
+          u_rrnames$labels <- setdiff(u_rrnames$labels, old_name) # Remove old name
           
-          u_rrdfs[[new_name]] <- u_rrdfs[[old_name]]
-          u_rrdfs <- setdiff(names(u_rrdfs), old_name)
+          u_rrdfs[[new_name]] <- u_rrdfs[[old_name]] # Add df under new name
+          u_rrdfs <- setdiff(names(u_rrdfs), old_name) # Remove old df
         }
       }
-      
       u_big_rrdf[['df']][i, j] <<- DT::coerceValue(v, u_big_rrdf[['df']][i, j])
     })
     
@@ -312,6 +339,17 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
       rm_vec <- u_big_rrdf[['df']][input$rr_list_table_rows_selected, ]
       u_big_rrdf[['df']] <- rm_file_rrdf(u_big_rrdf[['df']], rm_vec)
     })
+    
+    # PLOTS
+    
+    get_rr_table <- reactive ({
+      req(input$select_table)
+      df <- u_rrdfs[[input$select_table]]
+      return(df)
+    })
+    output$rr_table <- DT::renderDT(
+      get_rr_table(), filter="top"
+    )
     
     get_rr_barplot <- reactive ({
       req(input$select_bar)
@@ -347,20 +385,9 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
       get_rr_dotplot()
     })
     
-    get_rr_table <- reactive ({
-      req(input$select_table)
-      df <- u_rrdfs[[input$select_table]]
-      return(df)
-    })
-    output$rr_table <- DT::renderDataTable({
-      get_rr_table()
-    })
     
-    # Enrichment Result Heatmap
+    # Enrichment Result Heatmaps
     # Top Terms
-    # ez_listen <- reactive({
-    #   list(input$ez_add_select, input$ez_value_by, input$ez_nterms, input$ez_value_cutoff)
-    # })
     observeEvent({
       c(input$ez_add_select, input$ez_value_by, input$ez_nterms, input$ez_value_cutoff)
     }, {
@@ -387,12 +414,18 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
             term_vec <- sliced_gs$Term
             
             # add gs to custom_data_reactive
-            custom_data_reactive$df <- add_gs(custom_data=custom_data_reactive$df, gs=gs, 
-                                              gs_name=gs_name, term_vec=term_vec)
+            # custom_data_reactive$df <- add_gs(custom_data=custom_data_reactive$df, gs=gs, 
+            #                                   gs_name=gs_name, term_vec=term_vec)
+            tt_custom_data_reactive$df <- topterm_edit_gs(custom_data=tt_custom_data_reactive$df, 
+                                                          gs=gs, 
+                                                          gs_name=gs_name, 
+                                                          value_type=input$ez_value_by, 
+                                                          value_cutoff=input$ez_value_cutoff, 
+                                                          top_nterms=input$ez_nterms)
             # add terms to rr_term_vec_reactive
-            rr_term_vec_reactive[[gs_name]] <- term_vec
+            #rr_term_vec_reactive[[gs_name]] <- term_vec
             # add gs name to rr_custom_list_reactive
-            rr_custom_list_reactive$labels <- c(rr_custom_list_reactive$labels, gs_name)
+            #rr_custom_list_reactive$labels <- c(rr_custom_list_reactive$labels, gs_name)
             
             # Add gs to top_hmap_df_reactive
             top_hmap_df_reactive$df <- add_rr_tophmap(df=top_hmap_df_reactive$df, name=gs_name, 
@@ -451,8 +484,12 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
       return(df)
     })
     # output rr table
-    output$rr_select_table = DT::renderDataTable(
-      rr_to_table()
+    output$rr_select_table = DT::renderDT(
+      rr_to_table(),
+      filter = "top",
+      options = list(
+        pageLength = 5
+      ),
     )
     
     # add selected terms to heatmap
@@ -522,14 +559,24 @@ rrVisTabServer <- function(id, u_degnames, u_degdfs, u_big_degdf, u_rrnames, u_r
     #   print(rr_custom_list_reactive$labels)
     # })
     
-    # plot enrichment result heatmap
+    # Plot enrichment result heatmaps
+    plot_topterm_heatmap <- reactive({
+      if (nrow(tt_custom_data_reactive$df) != 0) {
+        hmap <- custom_hmap(custom_data=tt_custom_data_reactive$df)
+        return(hmap)
+      }
+    })
+    output$topterm_hmap <- renderPlotly({
+      plot_topterm_heatmap()
+    })
+    
     plot_custom_hmap <- reactive({
       if (nrow(custom_data_reactive$df) != 0) {
         hmap <- custom_hmap(custom_data=custom_data_reactive$df, value_type=value_by_reactive())
         return(hmap)
       }
     })
-    output$rr_hmap <- renderPlotly({
+    output$custom_hmap <- renderPlotly({
       plot_custom_hmap()
     })
     
