@@ -1,38 +1,9 @@
 # Functions to create integrative heatmaps from multiple enrichment results
+# (No clustering)
 
 
-# Helper function to append geneset to combined dataframe
-append_df <- function(custom_data, gs) {
-  # Get the names of columns in each data frame
-  colnames_cd <- colnames(custom_data)
-  colnames_gs <- colnames(gs)
-  
-  # Identify common and unique columns
-  common_cols <- intersect(colnames_cd, colnames_gs)
-  cd_only_cols <- setdiff(colnames_cd, colnames_gs)
-  
-  # Add missing columns to gs
-  gs[ , cd_only_cols] <- NA
-  
-  custom_data[colnames_cd]
-  gs[colnames_cd]
-  
-  # Combine the data frames by rows
-  combined_df <- rbind(custom_data, gs)
-  return(combined_df)
-}
-
-
-# Add geneset to combined dataframe
-# gs_name <- "GO_HF12wk_vs_WT12wk.txt"
-# gs <- gs1
-# term_vec <- c("acyl-CoA biosynthetic process", "single-organism cellular process", "positive regulation of positive chemotaxis")
-# 
-# gs_name <- "KEGG_HF36wk_vs_WT12wk.txt"
-# gs <- gs2
-# term_vec <- c("Steroid biosynthesis", "Terpenoid backbone biosynthesis")
-# term_vec <- c("Metabolic pathways", "Lysosome")
-add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
+# Add geneset and custom selected terms to combined dataframe
+add_custom_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
   
   # Subset gs by rows with gs$Term in term_vec
   gs <- gs[which(gs$Term %in% term_vec), ]
@@ -55,28 +26,47 @@ add_gs <- function(custom_data=NULL, gs, gs_name, term_vec) {
     } 
     # Else, gs previously added
     else { 
-      custom_data <- append_df(custom_data, gs)
+      # Get columns present in custom_data but not in gs
+      cd_only_cols <- setdiff(colnames(custom_data), colnames(gs))
+      gs[ , cd_only_cols] <- NA # Add cd_only_cols to gs as NA values (enables rbind)
+      
+      # Create dataframe of already added terms (term already added, gsname_cols are not NA)
+      added_term_df <- custom_data[which(custom_data$Term %in% term_vec), ]
+      added_term_df <- added_term_df[, c('Term', which(colnames(custom_data) %in% gsname_cols))]
+      added_term_df <- drop_na(added_term_df) 
+      
+      gs <- gs[!which(gs$Term %in% added_term_df$Term), ] # Exclude already added terms from gs
+      
+      custom_data <- rbind(custom_data, gs) # Rbind
     }
   }
   
   # Merge GeneID cols
   geneid_cols <- c(grep(paste0("^", "GeneID", "_"), colnames(custom_data), value=TRUE))
   tmp <- custom_data[, geneid_cols]
+  # Only one GeneID column (tmp is atomic)
   if (is.null(dim(tmp))) {
     names(tmp) <- c("GeneID")
     custom_data$GeneID <- tmp
-  } else {
-    custom_data$GeneID <- apply(custom_data[, geneid_cols], 1, function (x) paste(unique(c(x)), collapse=','))
-    # Catch NA
-    custom_data$GeneID <- sapply(custom_data$GeneID, function(x) gsub('NA,', '', x))
-    # Catch NA at the end
-    custom_data$GeneID <- sapply(custom_data$GeneID, function(x) gsub(',NA$', '', x, perl=TRUE))
+  } 
+  # Else, merge multiple GeneID columns
+  else {
+    custom_data$GeneID <- apply(custom_data[, geneid_cols], 1, function (x) {
+      paste(unique(c(x)), collapse=',') # Collect unique GeneIDs
+    })
+    custom_data$GeneID <- sapply(custom_data$GeneID, function(x) {
+      gsub('NA,', '', x) # Catch NA
+    })
+    custom_data$GeneID <- sapply(custom_data$GeneID, function(x) {
+      gsub(',NA$', '', x, perl=TRUE) # Catch NA at the end
+    })
   }
+  # Return resulting custom_data df
   return(custom_data)
 }
 
 
-topterm_edit_gs <- function(custom_data, gs, gs_name, value_type, value_cutoff, top_nterms) {
+add_topterm_gs <- function(custom_data, gs, gs_name, value_type, value_cutoff, top_nterms) {
   
   # Make sure value_cutoff, top_nterms are numeric
   value_cutoff <- as.numeric(value_cutoff)
@@ -90,7 +80,7 @@ topterm_edit_gs <- function(custom_data, gs, gs_name, value_type, value_cutoff, 
   gs <- gs %>%
     arrange(value_type) %>%
     slice_head(n = top_nterms)
-  gs <- gs[, c("Annot", "Term", value_type, "GeneID")]
+  # gs <- gs[, c("Annot", "Term", value_type, "GeneID")]
   
   # Append filename to all colnames except "Annot" and "Term"
   exclude_cols <- c("Annot", "Term")
@@ -129,10 +119,10 @@ topterm_edit_gs <- function(custom_data, gs, gs_name, value_type, value_cutoff, 
     })
   }
   
-  # Create logical vector, indicates FALSE if entire row is NA or NULL
+  # Remove rows from custom_data where no gs has values (NA or NULL)
   remove_df <- custom_data[, !(colnames(custom_data) %in% c("Annot", "Term", "GeneID"))]
   remove_vec <- apply(remove_df, 1, function(row) {
-    all(is.na(row) | sapply(row, is.null))
+    all(is.na(row) | sapply(row, is.null)) # Create logical vector, FALSE if entire row is NA or NULL
   })
   custom_data <- custom_data[!remove_vec, ] # Remove all NA/NULL rows from custom_data
   return(custom_data)
