@@ -75,12 +75,25 @@ add_topterm_gs <- function(custom_data, gs, gs_name, value_type, value_cutoff, t
     stop("value_cutoff and top_nterms must be numeric")
   }
   
+  # Fix top_nterms later...
+  # if (top_nterms == 0) {
+  #   same_gs_cols <- grepl(gs_name, colnames(custom_data))
+  #   if (!is.null(same_gs_cols)) { # Gs already in custom_data
+  #     null_vec <- replicate(length(same_gs_cols), NULL) # Number of NULL = ncol
+  #     null_vec <- setNames(null_vec, colnames(custom_data))
+  #   }
+  # }
+  
   # Filter gs by value_type, value_cutoff, and top_nterms
   gs <- filter(gs, gs[, value_type] < value_cutoff)
   gs <- gs %>%
     arrange(value_type) %>%
     slice_head(n = top_nterms)
-  # gs <- gs[, c("Annot", "Term", value_type, "GeneID")]
+  
+  # else { # Set gs to NULL vector
+  #   gs <- setNames(replicate(ncol(gs), NULL), colnames(gs))
+  #   gs <- data.frame(gs)
+  # }
   
   # Append filename to all colnames except "Annot" and "Term"
   exclude_cols <- c("Annot", "Term")
